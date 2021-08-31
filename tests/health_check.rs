@@ -20,7 +20,7 @@ async fn spawn_app() -> u16 {
     // Port 0 give us a random available port
     let figment = Figment::from(rocket::Config::default()).merge(("port", 0));
 
-	// Use a oneshot channel to retrieve the running port
+    // Use a oneshot channel to retrieve the running port
     let (tx, rx) = oneshot::channel();
     let server = get_rocket(Some(figment)).attach(AdHoc::on_liftoff("Config", |rocket| {
         Box::pin(async move {
