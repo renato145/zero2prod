@@ -1,4 +1,4 @@
-use rocket::{http::Status, Build, Rocket};
+use rocket::{figment::Figment, http::Status, Build, Rocket};
 
 #[macro_use]
 extern crate rocket;
@@ -13,6 +13,7 @@ async fn health_check() -> Status {
     Status::Ok
 }
 
-pub fn get_rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![index, health_check])
+pub fn get_rocket(config: Option<Figment>) -> Rocket<Build> {
+    let figment = config.unwrap_or_else(|| Figment::from(rocket::Config::default()));
+    rocket::custom(figment).mount("/", routes![index, health_check])
 }
