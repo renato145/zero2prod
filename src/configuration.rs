@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use sqlx::postgres::PgConnectOptions;
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -13,6 +14,26 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub host: String,
     pub database_name: String,
+}
+
+impl DatabaseSettings {
+    pub fn connection_string(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database_name
+        )
+    }
+}
+
+impl From<DatabaseSettings> for PgConnectOptions {
+    fn from(settings: DatabaseSettings) -> Self {
+        PgConnectOptions::new()
+            .username(&settings.username)
+            .password(&settings.password)
+            .port(settings.port)
+            .host(&settings.host)
+            .database(&settings.database_name)
+    }
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
