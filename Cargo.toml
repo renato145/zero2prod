@@ -5,5 +5,16 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[lib]
+path = "src/lib.rs"
+
+
+[[bin]]
+name = "zero2prod"
+path = "src/main.rs"
+
+
 [dependencies]
 rocket = "0.5.0-rc.1"
+reqwest = "0.11.3"
