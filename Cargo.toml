@@ -21,6 +21,8 @@ rocket_sync_db_pools = { version = "0.1.0-rc.1", features = ["postgres_pool"] }
 reqwest = "0.11.3"
 serde = { version = "1.0", features = ["derive"] }
 config = "0.11.0"
+uuid = { version = "0.8.2", features = ["v4"] }
+chrono = "0.4.19"
 
 [dependencies.sqlx]
 version = "0.5.5"

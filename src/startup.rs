@@ -7,9 +7,9 @@ use rocket::{
     figment::Figment,
     Build, Rocket,
 };
-use sqlx::{postgres::PgConnectOptions, ConnectOptions};
+use sqlx::{postgres::PgConnectOptions, ConnectOptions, PgPool};
 
-pub fn get_rocket(config: Option<Figment>) -> Rocket<Build> {
+pub fn get_rocket(config: Option<Figment>, connection_pool: Option<PgPool>) -> Rocket<Build> {
     let configuration = get_configuration().expect("Failed to read configuration.");
 
     let figment = config.unwrap_or_else(|| {
@@ -17,28 +17,33 @@ pub fn get_rocket(config: Option<Figment>) -> Rocket<Build> {
     });
 
     rocket::custom(figment)
-        .attach(stage())
+        .attach(stage(connection_pool))
         .mount("/", routes![health_check_route, subscribe])
 }
 
-type Db = sqlx::PgPool;
-
-fn stage() -> AdHoc {
-    AdHoc::try_on_ignite("SQLx Database", init_db)
+fn stage(connection_pool: Option<PgPool>) -> AdHoc {
+    AdHoc::try_on_ignite("SQLx Database", |rocket| async {
+        init_db(rocket, connection_pool).await
+    })
 }
 
-async fn init_db(rocket: Rocket<Build>) -> fairing::Result {
-    let mut opts: PgConnectOptions = get_configuration()
-        .expect("Failed to read configuration.")
-        .database
-        .into();
-    opts.disable_statement_logging();
-
-    let db = match Db::connect_with(opts).await {
-        Ok(db) => db,
-        Err(e) => {
-            error!("Failed to connect to SQLx database: {}", e);
-            return Err(rocket);
+async fn init_db(rocket: Rocket<Build>, connection_pool: Option<PgPool>) -> fairing::Result {
+    let db = match connection_pool {
+        Some(db) => db,
+        None => {
+            let mut opts: PgConnectOptions = get_configuration()
+                .expect("Failed to read configuration.")
+                .database
+                .into();
+            opts.disable_statement_logging();
+            let db = match PgPool::connect_with(opts).await {
+                Ok(db) => db,
+                Err(e) => {
+                    error!("Failed to connect to SQLx database: {}", e);
+                    return Err(rocket);
+                }
+            };
+            db
         }
     };
 

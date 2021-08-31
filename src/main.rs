@@ -5,5 +5,5 @@ extern crate rocket;
 
 #[launch]
 fn rocket() -> _ {
-    get_rocket(None)
+    get_rocket(None, None)
 }
