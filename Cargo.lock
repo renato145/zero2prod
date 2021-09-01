@@ -2406,6 +2406,7 @@ dependencies = [
  "chrono",
  "config",
  "env_logger",
+ "log",
  "reqwest",
  "rocket",
  "serde 1.0.130",

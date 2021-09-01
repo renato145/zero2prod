@@ -11,6 +11,12 @@ pub struct FormData {
 
 #[post("/subscriptions", data = "<form>")]
 pub async fn subscribe(form: Form<FormData>, db: &State<PgPool>) -> Status {
+    log::info!(
+        "Adding '{}' '{}' as a new subscriber.",
+        form.email,
+        form.name
+    );
+    log::info!("Saving new subcriber details in the database.");
     match sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
@@ -24,9 +30,12 @@ pub async fn subscribe(form: Form<FormData>, db: &State<PgPool>) -> Status {
     .execute(&**db)
     .await
     {
-        Ok(_) => Status::Ok,
+        Ok(_) => {
+            log::info!("New subscriber details have been saved.");
+            Status::Ok
+        }
         Err(e) => {
-            println!("Failed to execute query: {}", e);
+            log::error!("Failed to execute query: {:?}", e);
             Status::InternalServerError
         }
     }
