@@ -8,4 +8,4 @@ POST {{host}}/subscriptions HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 name=test
-&email=test2@test.com
+&email=test@test.com

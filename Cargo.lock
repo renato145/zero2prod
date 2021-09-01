@@ -2526,6 +2526,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "config",
+ "once_cell",
  "reqwest",
  "rocket",
  "serde 1.0.130",

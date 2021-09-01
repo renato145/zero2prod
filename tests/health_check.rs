@@ -1,10 +1,17 @@
+use once_cell::sync::Lazy;
 use rocket::{fairing::AdHoc, figment::Figment, tokio::sync::oneshot};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
     get_rocket,
+    telemetry::{get_subscriber, init_subscriber},
 };
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let subscriber = get_subscriber("test".into(), "debug".into());
+    init_subscriber(subscriber);
+});
 
 #[derive(Debug)]
 pub struct TestApp {
@@ -13,13 +20,15 @@ pub struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    // Set up tracing
+    Lazy::force(&TRACING);
+
     // Port 0 give us a random available port
     let figment = Figment::from(rocket::Config::default()).merge(("port", 0));
 
     // Get a custom PgPool
     let mut configuration = get_configuration().expect("Failed to read configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
-
     let connection_pool = configure_database(&configuration.database).await;
 
     // Use a oneshot channel to retrieve the running port
@@ -32,9 +41,9 @@ async fn spawn_app() -> TestApp {
             })
         }),
     );
-
     rocket::tokio::spawn(server.launch());
     let address = rx.await.expect("Failed to get running port.");
+
     TestApp {
         address,
         db_pool: connection_pool,

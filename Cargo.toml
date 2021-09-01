@@ -40,3 +40,6 @@ features = [
 	"migrate",
 	"offline"
 ]
+
+[dev-dependencies]
+once_cell = "1.7.2"
