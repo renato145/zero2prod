@@ -1,7 +1,6 @@
 use chrono::Utc;
 use rocket::{form::Form, http::Status, State};
 use sqlx::PgPool;
-use tracing::Instrument;
 use uuid::Uuid;
 
 #[derive(FromForm)]
@@ -10,21 +9,29 @@ pub struct FormData {
     name: String,
 }
 
-#[post("/subscriptions", data = "<form>")]
-pub async fn subscribe(form: Form<FormData>, db: &State<PgPool>) -> Status {
-    let request_id = Uuid::new_v4();
-    // With the % symbol we are telling tracing to use their Display implementation for logging purposes
-    let request_span = tracing::info_span!(
-        "Adding a new subscriber.",
-        %request_id,
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(form, pool),
+    fields(
+        request_id = %Uuid::new_v4(),
         subcriber_email = %form.email,
         subcriber_name = %form.name
-    );
-    let _request_span_guard = request_span.enter();
+    )
+)]
+#[post("/subscriptions", data = "<form>")]
+pub async fn subscribe(form: Form<FormData>, pool: &State<PgPool>) -> Status {
+    match insert_subscriber(&**pool, &form).await {
+        Ok(_) => Status::Ok,
+        Err(_) => Status::InternalServerError,
+    }
+}
 
-    let query_span = tracing::info_span!("Saving new subcriber details in the database.");
-
-    match sqlx::query!(
+#[tracing::instrument(
+    name = "Saving a new subscriber details in the database",
+    skip(form, pool)
+)]
+pub async fn insert_subscriber(pool: &PgPool, form: &FormData) -> Result<(), sqlx::Error> {
+    sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
         VALUES ($1, $2, $3, $4)
@@ -34,14 +41,11 @@ pub async fn subscribe(form: Form<FormData>, db: &State<PgPool>) -> Status {
         form.name,
         Utc::now()
     )
-    .execute(&**db)
-    .instrument(query_span)
+    .execute(pool)
     .await
-    {
-        Ok(_) => Status::Ok,
-        Err(e) => {
-            tracing::error!("Failed to execute query: {:?}", e);
-            Status::InternalServerError
-        }
-    }
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(())
 }
