@@ -13,7 +13,9 @@ pub fn get_rocket(config: Option<Figment>, connection_pool: Option<PgPool>) -> R
     let configuration = get_configuration().expect("Failed to read configuration.");
 
     let figment = config.unwrap_or_else(|| {
-        Figment::from(rocket::Config::default()).merge(("port", configuration.application_port))
+        Figment::from(rocket::Config::default())
+            .merge(("port", configuration.application.port))
+            .merge(("address", configuration.application.address))
     });
 
     rocket::custom(figment)
