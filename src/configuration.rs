@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use sqlx::{PgPool, postgres::PgConnectOptions};
+use sqlx::{postgres::PgConnectOptions, PgPool};
 
 #[derive(Deserialize)]
 pub struct Settings {
