@@ -17,11 +17,11 @@ pub fn get_rocket(config: Option<Figment>, connection_pool: Option<PgPool>) -> R
     });
 
     rocket::custom(figment)
-        .attach(stage(connection_pool))
+        .attach(stage_db(connection_pool))
         .mount("/", routes![health_check_route, subscribe])
 }
 
-fn stage(connection_pool: Option<PgPool>) -> AdHoc {
+fn stage_db(connection_pool: Option<PgPool>) -> AdHoc {
     AdHoc::try_on_ignite("SQLx Database", |rocket| async {
         init_db(rocket, connection_pool).await
     })
