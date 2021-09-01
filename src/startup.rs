@@ -18,6 +18,9 @@ pub fn get_rocket(config: Option<Figment>, connection_pool: Option<PgPool>) -> R
 
     rocket::custom(figment)
         .attach(stage_db(connection_pool))
+        // The book uses `tracing_actix_web` to create requests ids
+        // I ignored this part as Rocket have not tracing yet, but check
+        // https://github.com/SergioBenitez/Rocket/pull/1579 in the future
         .mount("/", routes![health_check_route, subscribe])
 }
 
