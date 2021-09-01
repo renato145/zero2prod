@@ -1,4 +1,5 @@
 use zero2prod::{
+    configuration::get_configuration,
     get_rocket,
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -7,9 +8,16 @@ use zero2prod::{
 extern crate rocket;
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
     let subscriber = get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
 
-    get_rocket(None, None)
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let connection_pool = configuration
+        .database
+        .connection_pool()
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    get_rocket(configuration, connection_pool)
 }

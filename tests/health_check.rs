@@ -1,5 +1,5 @@
 use once_cell::sync::Lazy;
-use rocket::{fairing::AdHoc, figment::Figment, tokio::sync::oneshot};
+use rocket::{fairing::AdHoc, tokio::sync::oneshot};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
@@ -32,24 +32,26 @@ async fn spawn_app() -> TestApp {
     // Set up tracing
     Lazy::force(&TRACING);
 
+    let mut configuration = get_configuration().expect("Failed to read configuration.");
+
     // Port 0 give us a random available port
-    let figment = Figment::from(rocket::Config::default()).merge(("port", 0));
+    configuration.application.port = 0;
 
     // Get a custom PgPool
-    let mut configuration = get_configuration().expect("Failed to read configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&configuration.database).await;
 
     // Use a oneshot channel to retrieve the running port
     let (tx, rx) = oneshot::channel();
-    let server = get_rocket(Some(figment), Some(connection_pool.clone())).attach(
-        AdHoc::on_liftoff("Config", |rocket| {
+    let server = get_rocket(configuration, connection_pool.clone()).attach(AdHoc::on_liftoff(
+        "Config",
+        |rocket| {
             Box::pin(async move {
                 let address = format!("http://127.0.0.1:{}", rocket.config().port);
                 tx.send(address).unwrap();
             })
-        }),
-    );
+        },
+    ));
     rocket::tokio::spawn(server.launch());
     let address = rx.await.expect("Failed to get running port.");
 
@@ -115,7 +117,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
 
     assert_eq!(200, response.status().as_u16());
 
-    let saved = sqlx::query!("SELECT email,name FROM subscriptions",)
+    let saved = sqlx::query!("SELECT email,name FROM subscriptions")
         .fetch_one(&app.db_pool)
         .await
         .expect("Failed to fetch saved subscription.");
