@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use sqlx::postgres::PgConnectOptions;
+use sqlx::{PgPool, postgres::PgConnectOptions};
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -7,7 +7,7 @@ pub struct Settings {
     pub application_port: u16,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: String,
@@ -29,6 +29,10 @@ impl DatabaseSettings {
             "postgres://{}:{}@{}:{}",
             self.username, self.password, self.host, self.port
         )
+    }
+
+    pub async fn connection_pool(&self) -> Result<PgPool, sqlx::Error> {
+        PgPool::connect_with(self.clone().into()).await
     }
 }
 
