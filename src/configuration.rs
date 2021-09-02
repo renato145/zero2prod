@@ -1,8 +1,5 @@
 use serde::Deserialize;
-use sqlx::{
-    postgres::{PgConnectOptions, PgPoolOptions},
-    PgPool,
-};
+use sqlx::postgres::PgConnectOptions;
 use std::{
     convert::{TryFrom, TryInto},
     net::IpAddr,
@@ -30,25 +27,15 @@ pub struct ApplicationSettings {
 }
 
 impl DatabaseSettings {
-    pub fn connection_string(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database_name
-        )
+    pub fn without_db(&self) -> PgConnectOptions {
+        PgConnectOptions::new()
+            .host(&self.host)
+            .username(&self.username)
+            .password(&self.password)
+            .port(self.port)
     }
-
-    pub fn connection_string_without_db(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}",
-            self.username, self.password, self.host, self.port
-        )
-    }
-
-    pub async fn connection_pool(&self) -> Result<PgPool, sqlx::Error> {
-        PgPoolOptions::new()
-            .connect_timeout(std::time::Duration::from_secs(2))
-            .connect_with(self.clone().into())
-            .await
+    pub fn with_db(&self) -> PgConnectOptions {
+        self.without_db().database(&self.database_name)
     }
 }
 
