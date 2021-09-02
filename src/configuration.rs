@@ -1,5 +1,8 @@
 use serde::Deserialize;
-use sqlx::{postgres::PgConnectOptions, PgPool};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    PgPool,
+};
 use std::{
     convert::{TryFrom, TryInto},
     net::IpAddr,
@@ -42,7 +45,10 @@ impl DatabaseSettings {
     }
 
     pub async fn connection_pool(&self) -> Result<PgPool, sqlx::Error> {
-        PgPool::connect_with(self.clone().into()).await
+        PgPoolOptions::new()
+            .connect_timeout(std::time::Duration::from_secs(2))
+            .connect_with(self.clone().into())
+            .await
     }
 }
 
