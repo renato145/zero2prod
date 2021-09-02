@@ -12,6 +12,10 @@ jobs:
     services:
       postgres:
         image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
     steps:
