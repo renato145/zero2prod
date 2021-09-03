@@ -14,7 +14,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
 ENV SQLX_OFFLINE true
-RUN cargo build --release
+RUN cargo build --release --bin zero2prod
 
 # Runtime stage
 FROM debian:buster-slim AS runtime
