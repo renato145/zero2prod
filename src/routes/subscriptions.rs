@@ -1,3 +1,5 @@
+use std::convert::{TryFrom, TryInto};
+
 use chrono::Utc;
 use rocket::{form::Form, http::Status, State};
 use sqlx::PgPool;
@@ -11,6 +13,16 @@ pub struct FormData {
     name: String,
 }
 
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(value: FormData) -> Result<Self, Self::Error> {
+        let name = SubscriberName::parse(value.name)?;
+        let email = SubscriberEmail::parse(value.email)?;
+        Ok(NewSubscriber { email, name })
+    }
+}
+
 #[tracing::instrument(
     name = "Adding a new subscriber",
     skip(form, pool),
@@ -22,16 +34,10 @@ pub struct FormData {
 )]
 #[post("/subscriptions", data = "<form>")]
 pub async fn subscribe(form: Form<FormData>, pool: &State<PgPool>) -> Status {
-    let form = form.into_inner();
-    let name = match SubscriberName::parse(form.name) {
-        Ok(name) => name,
+    let new_subscriber = match form.into_inner().try_into() {
+        Ok(subcriber) => subcriber,
         Err(_) => return Status::BadRequest,
     };
-    let email = match SubscriberEmail::parse(form.email) {
-        Ok(email) => email,
-        Err(_) => return Status::BadRequest,
-    };
-    let new_subscriber = NewSubscriber { email, name };
 
     match insert_subscriber(&**pool, &new_subscriber).await {
         Ok(_) => Status::Ok,
