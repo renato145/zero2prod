@@ -1,25 +1,25 @@
 use crate::{
-    configuration::Settings,
+    configuration::ApplicationSettings,
+    email_client::EmailClient,
     routes::{health_check_route, subscribe},
 };
-use rocket::{fairing::AdHoc, figment::Figment, Build, Rocket};
+use rocket::{figment::Figment, Build, Rocket};
 use sqlx::PgPool;
 
-pub fn get_rocket(configuration: Settings, connection_pool: PgPool) -> Rocket<Build> {
+pub fn get_rocket(
+    app_configuration: ApplicationSettings,
+    connection_pool: PgPool,
+    email_client: EmailClient,
+) -> Rocket<Build> {
     let figment = Figment::from(rocket::Config::default())
-        .merge(("port", configuration.application.port))
-        .merge(("address", configuration.application.address));
+        .merge(("port", app_configuration.port))
+        .merge(("address", app_configuration.address));
 
+    // The book uses `tracing_actix_web` to create requests ids
+    // I ignored this part as Rocket have not tracing yet, but check
+    // https://github.com/SergioBenitez/Rocket/pull/1579 in the future
     rocket::custom(figment)
-        .attach(stage_db(connection_pool))
-        // The book uses `tracing_actix_web` to create requests ids
-        // I ignored this part as Rocket have not tracing yet, but check
-        // https://github.com/SergioBenitez/Rocket/pull/1579 in the future
+        .manage(connection_pool)
+        .manage(email_client)
         .mount("/", routes![health_check_route, subscribe])
-}
-
-fn stage_db(connection_pool: PgPool) -> AdHoc {
-    AdHoc::try_on_ignite("SQLx Database", |rocket| async {
-        Ok(rocket.manage(connection_pool))
-    })
 }
