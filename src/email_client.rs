@@ -18,7 +18,12 @@ impl EmailClient {
         authorization_token: String,
         timeout: Duration,
     ) -> Result<Self, String> {
-        let base_url = Url::parse(&base_url).expect("Failed to parse url.");
+        let base_url = match base_url.as_str() {
+            "localhost" => "http://localhost".to_string(),
+            _ => base_url,
+        };
+        let base_url =
+            Url::parse(&base_url).map_err(|_| format!("Failed to parse url {:?}.", base_url))?;
         let http_client = Client::builder().timeout(timeout).build().unwrap();
 
         Ok(Self {
@@ -113,6 +118,17 @@ mod tests {
 
     fn email_client(base_url: String) -> EmailClient {
         EmailClient::new(base_url, email(), Faker.fake(), Duration::from_millis(200)).unwrap()
+    }
+
+    #[test]
+    fn email_client_correctly_parse_localhost() {
+        let email_client = EmailClient::new(
+            "localhost".to_string(),
+            email(),
+            Faker.fake(),
+            Duration::from_millis(200),
+        );
+        assert_ok!(email_client);
     }
 
     #[tokio::test]
