@@ -3,9 +3,9 @@ use rocket::{fairing::AdHoc, tokio::sync::oneshot};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
+    build,
     configuration::{get_configuration, DatabaseSettings},
-    email_client::EmailClient,
-    get_rocket,
+    get_connection_pool,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -33,47 +33,37 @@ pub async fn spawn_app() -> TestApp {
     // Set up tracing
     Lazy::force(&TRACING);
 
-    let mut configuration = get_configuration().expect("Failed to read configuration.");
+    let configuration = {
+        let mut c = get_configuration().expect("Failed to read configuration.");
+        // Port 0 give us a random available port
+        c.application.port = 0;
+        // Use a different database for each test case
+        c.database.database_name = Uuid::new_v4().to_string();
+        c
+    };
 
-    // Port 0 give us a random available port
-    configuration.application.port = 0;
+    // Create and migrate database
+    configure_database(&configuration.database).await;
 
-    // Get a custom PgPool
-    configuration.database.database_name = Uuid::new_v4().to_string();
-    let connection_pool = configure_database(&configuration.database).await;
-
-    let sender_email = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email address.");
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender_email,
-        configuration.email_client.authorization_token,
-        timeout,
-    )
-    .expect("Failed to build email client.");
-
-    // Use a oneshot channel to retrieve the running port
+    // Launch app as background task
     let (tx, rx) = oneshot::channel();
-    let server = get_rocket(
-        configuration.application,
-        connection_pool.clone(),
-        email_client,
-    )
-    .attach(AdHoc::on_liftoff("Config", |rocket| {
-        Box::pin(async move {
-            let address = format!("http://127.0.0.1:{}", rocket.config().port);
-            tx.send(address).unwrap();
-        })
-    }));
+    let server =
+        build(configuration.clone())
+            .await
+            .attach(AdHoc::on_liftoff("Get port", |rocket| {
+                Box::pin(async move {
+                    let address = format!("http://127.0.0.1:{}", rocket.config().port);
+                    tx.send(address).unwrap();
+                })
+            }));
     rocket::tokio::spawn(server.launch());
     let address = rx.await.expect("Failed to get running port.");
 
     TestApp {
         address,
-        db_pool: connection_pool,
+        db_pool: get_connection_pool(&configuration.database)
+            .await
+            .expect("Failed to connect to the database."),
     }
 }
 

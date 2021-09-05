@@ -8,14 +8,14 @@ use std::{
 
 use crate::domain::SubscriberEmail;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
     pub email_client: EmailClientSettings,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct EmailClientSettings {
     pub base_url: String,
     pub sender_email: String,
