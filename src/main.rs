@@ -3,7 +3,6 @@ use std::time::Duration;
 use sqlx::postgres::PgPoolOptions;
 use zero2prod::{
     configuration::get_configuration,
-    domain::SubscriberEmail,
     email_client::EmailClient,
     get_rocket,
     telemetry::{get_subscriber, init_subscriber},
@@ -28,7 +27,14 @@ async fn rocket() -> _ {
         .email_client
         .sender()
         .expect("Invalid sender email address.");
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+    let timeout = configuration.email_client.timeout();
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender_email,
+        configuration.email_client.authorization_token,
+        timeout,
+    )
+    .expect("Failed to build email client.");
 
     get_rocket(configuration.application, connection_pool, email_client)
 }
