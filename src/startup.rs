@@ -1,7 +1,7 @@
 use crate::{
     configuration::{ApplicationSettings, DatabaseSettings, Settings},
     email_client::EmailClient,
-    routes::{health_check_route, subscribe},
+    routes::{confirm, health_check_route, subscribe},
 };
 use rocket::{figment::Figment, Build, Rocket};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -50,5 +50,5 @@ pub fn get_rocket(
     rocket::custom(figment)
         .manage(connection_pool)
         .manage(email_client)
-        .mount("/", routes![health_check_route, subscribe])
+        .mount("/", routes![health_check_route, subscribe, confirm])
 }
