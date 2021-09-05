@@ -15,5 +15,27 @@
 		"titleBar.inactiveBackground": "#b52e3199",
 		"titleBar.inactiveForeground": "#e7e7e799"
 	},
-	"peacock.color": "#b52e31"
+	"peacock.color": "#b52e31",
+	"sqltools.connections": [
+		{
+			"previewLimit": 50,
+			"server": "192.168.0.17",
+			"port": 5432,
+			"driver": "PostgreSQL",
+			"name": "xps-dulux",
+			"database": "dulux",
+			"username": "postgres",
+			"password": "postgres"
+		},
+		{
+			"previewLimit": 50,
+			"server": "localhost",
+			"port": 5432,
+			"driver": "PostgreSQL",
+			"name": "zero2prod",
+			"database": "newsletter",
+			"username": "postgres",
+			"password": "password"
+		}
+	]
 }
