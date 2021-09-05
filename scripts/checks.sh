@@ -2,4 +2,4 @@
 cargo check
 cargo clippy
 cargo fmt --all -- --check
-cargo sqlx prepare --check -- --bin zero2prod
+cargo sqlx prepare --check -- --lib
