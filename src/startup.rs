@@ -35,6 +35,8 @@ pub async fn get_connection_pool(configuration: &DatabaseSettings) -> Result<PgP
         .await
 }
 
+pub struct ApplicationBaseUrl(pub String);
+
 pub fn get_rocket(
     app_configuration: ApplicationSettings,
     connection_pool: PgPool,
@@ -44,11 +46,14 @@ pub fn get_rocket(
         .merge(("port", app_configuration.port))
         .merge(("address", app_configuration.address));
 
+    let base_url = ApplicationBaseUrl(app_configuration.base_url);
+
     // The book uses `tracing_actix_web` to create requests ids
     // I ignored this part as Rocket have not tracing yet, but check
     // https://github.com/SergioBenitez/Rocket/pull/1579 in the future
     rocket::custom(figment)
         .manage(connection_pool)
         .manage(email_client)
+        .manage(base_url)
         .mount("/", routes![health_check_route, subscribe, confirm])
 }

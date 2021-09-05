@@ -26,6 +26,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 
 pub struct TestApp {
     pub address: String,
+    pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
 }
@@ -69,15 +70,16 @@ pub async fn spawn_app() -> TestApp {
             .await
             .attach(AdHoc::on_liftoff("Get port", |rocket| {
                 Box::pin(async move {
-                    let address = format!("http://127.0.0.1:{}", rocket.config().port);
-                    tx.send(address).unwrap();
+                    tx.send(rocket.config().port).unwrap();
                 })
             }));
     rocket::tokio::spawn(server.launch());
-    let address = rx.await.expect("Failed to get running port.");
+    let port = rx.await.expect("Failed to get running port.");
+    let address = format!("http://127.0.0.1:{}", port);
 
     TestApp {
         address,
+        port,
         db_pool: get_connection_pool(&configuration.database)
             .await
             .expect("Failed to connect to the database."),
