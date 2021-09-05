@@ -1,12 +1,26 @@
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
+
 use crate::helpers::spawn_app;
 
 #[rocket::async_test]
 async fn subscribe_returns_200_for_valid_form_data() {
+    // Arrange
     let app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&app.email_server)
+        .await;
+
+    // Act
     let response = app.post_subscriptions(body.into()).await;
 
+    // Assert
     assert_eq!(200, response.status().as_u16());
 
     let saved = sqlx::query!("SELECT email,name FROM subscriptions")
@@ -19,7 +33,25 @@ async fn subscribe_returns_200_for_valid_form_data() {
 }
 
 #[rocket::async_test]
+async fn subscribe_sends_confirmation_email_for_valid_data() {
+    // arrange
+    let app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(path("/email"))
+        .and(method("post"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // act
+    app.post_subscriptions(body.into()).await;
+}
+
+#[rocket::async_test]
 async fn subscribe_returns_client_error_when_data_is_missing() {
+    // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
         ("name=le%20guin", "missing the email"),
@@ -28,8 +60,10 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
     ];
 
     for (invalid_body, error_message) in test_cases {
+        // Act
         let response = app.post_subscriptions(invalid_body.into()).await;
 
+        // Assert
         assert!(
             response.status().is_client_error(),
             "The API did not fail with 400 Bad Request when the payload was {}.",
@@ -40,6 +74,7 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
 
 #[rocket::async_test]
 async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
+    // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
         ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
@@ -48,8 +83,10 @@ async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     ];
 
     for (body, description) in test_cases {
+        // Act
         let response = app.post_subscriptions(body.into()).await;
 
+        // Assert
         assert_eq!(
             400,
             response.status().as_u16(),
