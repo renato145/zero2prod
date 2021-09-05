@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+cargo check
+cargo clippy
+cargo fmt --all -- --check
+cargo sqlx prepare --check -- --bin zero2prod

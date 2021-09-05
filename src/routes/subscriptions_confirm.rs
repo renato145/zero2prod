@@ -17,7 +17,7 @@ pub async fn confirm(parameters: Parameters, pool: &State<PgPool>) -> Status {
     match id {
         None => Status::Unauthorized,
         Some(subscriber_id) => {
-            if confirm_subscriber(&pool, subscriber_id).await.is_err() {
+            if confirm_subscriber(pool, subscriber_id).await.is_err() {
                 return Status::InternalServerError;
             }
             Status::Ok
