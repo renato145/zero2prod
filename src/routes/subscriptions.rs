@@ -121,6 +121,8 @@ pub async fn insert_subscriber(
     Ok(subscriber_id)
 }
 
+pub struct StoreTokenError(sqlx::Error);
+
 #[tracing::instrument(
     name = "Store subscription token in the database",
     skip(transaction, subscription_token)
@@ -129,7 +131,7 @@ pub async fn store_token(
     transaction: &mut Transaction<'_, Postgres>,
     subscriber_id: Uuid,
     subscription_token: &str,
-) -> Result<(), sqlx::Error> {
+) -> Result<(), StoreTokenError> {
     sqlx::query!(
         r#"INSERT INTO subscription_tokens (subscription_token, subscriber_id)
         VALUES ($1, $2)"#,
@@ -138,10 +140,7 @@ pub async fn store_token(
     )
     .execute(transaction)
     .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .map_err(|e| StoreTokenError(e))?;
     Ok(())
 }
 
