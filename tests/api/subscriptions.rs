@@ -5,7 +5,7 @@ use wiremock::{
 
 use crate::helpers::spawn_app;
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_returns_200_for_valid_form_data() {
     // Arrange
     let app = spawn_app().await;
@@ -25,7 +25,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_persist_the_new_subscribe() {
     // Arrange
     let app = spawn_app().await;
@@ -45,7 +45,7 @@ async fn subscribe_persist_the_new_subscribe() {
     assert_eq!(saved.status, "pending_confirmation");
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_sends_confirmation_email_for_valid_data() {
     // Arrange
     let app = spawn_app().await;
@@ -62,7 +62,7 @@ async fn subscribe_sends_confirmation_email_for_valid_data() {
     app.post_subscriptions(body.into()).await;
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_sends_confirmation_email_with_link() {
     // Arrange
     let app = spawn_app().await;
@@ -84,7 +84,7 @@ async fn subscribe_sends_confirmation_email_with_link() {
     assert_eq!(confirmation_links.html, confirmation_links.plain_text);
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_returns_client_error_when_data_is_missing() {
     // Arrange
     let app = spawn_app().await;
@@ -99,15 +99,16 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
         let response = app.post_subscriptions(invalid_body.into()).await;
 
         // Assert
-        assert!(
-            response.status().is_client_error(),
+        assert_eq!(
+            400,
+            response.status().as_u16(),
             "The API did not fail with Client Error when the payload was {}.",
             error_message
         );
     }
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
@@ -131,7 +132,7 @@ async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     }
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn subscribe_fail_if_there_is_a_fatal_database_error() {
     // Arrange
     let app = spawn_app().await;

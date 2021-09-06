@@ -2,7 +2,6 @@ use serde::Deserialize;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use std::{
     convert::{TryFrom, TryInto},
-    net::IpAddr,
     time::Duration,
 };
 
@@ -46,7 +45,7 @@ pub struct DatabaseSettings {
 #[derive(Clone, Deserialize)]
 pub struct ApplicationSettings {
     pub port: u16,
-    pub address: IpAddr,
+    pub host: String,
     pub base_url: String,
 }
 

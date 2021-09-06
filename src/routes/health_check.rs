@@ -1,6 +1,5 @@
-use rocket::http::Status;
+use actix_web::HttpResponse;
 
-#[get("/health_check")]
-pub async fn health_check_route() -> Status {
-    Status::Ok
+pub async fn health_check_route() -> HttpResponse {
+    HttpResponse::Ok().finish()
 }

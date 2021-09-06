@@ -1,26 +1,25 @@
-use rocket::{http::Status, State};
+use actix_web::{web, HttpResponse};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(FromForm)]
+#[derive(serde::Deserialize)]
 pub struct Parameters {
     subscription_token: String,
 }
 
 #[tracing::instrument(name = "Confirm a pending subscriber", skip(parameters, pool))]
-#[get("/subscriptions/confirm?<parameters..>")]
-pub async fn confirm(parameters: Parameters, pool: &State<PgPool>) -> Status {
+pub async fn confirm(parameters: web::Query<Parameters>, pool: web::Data<PgPool>) -> HttpResponse {
     let id = match get_subscriber_id_from_token(&**pool, &parameters.subscription_token).await {
         Ok(id) => id,
-        Err(_) => return Status::InternalServerError,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     };
     match id {
-        None => Status::Unauthorized,
+        None => HttpResponse::Unauthorized().finish(),
         Some(subscriber_id) => {
-            if confirm_subscriber(pool, subscriber_id).await.is_err() {
-                return Status::InternalServerError;
+            if confirm_subscriber(&pool, subscriber_id).await.is_err() {
+                return HttpResponse::InternalServerError().finish();
             }
-            Status::Ok
+            HttpResponse::Ok().finish()
         }
     }
 }

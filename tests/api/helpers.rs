@@ -1,14 +1,13 @@
 use once_cell::sync::Lazy;
 use reqwest::Url;
-use rocket::{fairing::AdHoc, tokio::sync::oneshot};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::{
-    build,
     configuration::{get_configuration, DatabaseSettings},
     get_connection_pool,
     telemetry::{get_subscriber, init_subscriber},
+    Application,
 };
 
 // Ensure that 'tracing' stack is only initialized once using `once_cell`
@@ -75,8 +74,10 @@ pub async fn spawn_app() -> TestApp {
     // Set up tracing
     Lazy::force(&TRACING);
 
+    // Launch mock server to stand in for the Mail server
     let email_server = MockServer::start().await;
 
+    // Randomise configuration to ensure test isolation
     let configuration = {
         let mut c = get_configuration().expect("Failed to read configuration.");
         // Port 0 give us a random available port
@@ -92,22 +93,15 @@ pub async fn spawn_app() -> TestApp {
     configure_database(&configuration.database).await;
 
     // Launch app as background task
-    let (tx, rx) = oneshot::channel();
-    let server =
-        build(configuration.clone())
-            .await
-            .attach(AdHoc::on_liftoff("Get port", |rocket| {
-                Box::pin(async move {
-                    tx.send(rocket.config().port).unwrap();
-                })
-            }));
-    rocket::tokio::spawn(server.launch());
-    let port = rx.await.expect("Failed to get running port.");
-    let address = format!("http://127.0.0.1:{}", port);
+    let application = Application::build(configuration.clone())
+        .await
+        .expect("Failed to build application.");
+    let application_port = application.port();
+    let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
-        address,
-        port,
+        address: format!("http://localhost:{}", application_port),
+        port: application_port,
         db_pool: get_connection_pool(&configuration.database)
             .await
             .expect("Failed to connect to the database."),

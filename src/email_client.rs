@@ -1,8 +1,6 @@
-use std::time::Duration;
-
 use crate::domain::SubscriberEmail;
 use reqwest::{Client, Url};
-use rocket::serde::Serialize;
+use std::time::Duration;
 
 pub struct EmailClient {
     http_client: Client,
@@ -60,7 +58,7 @@ impl EmailClient {
     }
 }
 
-#[derive(Serialize)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct SendEmailRequest<'a> {
     from: &'a str,

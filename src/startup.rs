@@ -1,31 +1,63 @@
 use crate::{
-    configuration::{ApplicationSettings, DatabaseSettings, Settings},
+    configuration::{DatabaseSettings, Settings},
     email_client::EmailClient,
     routes::{confirm, health_check_route, subscribe},
 };
-use rocket::{figment::Figment, Build, Rocket};
+use actix_web::{
+    dev::Server,
+    web::{self, Data},
+    App, HttpServer,
+};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::time::Duration;
+use std::{net::TcpListener, time::Duration};
+use tracing_actix_web::TracingLogger;
 
-pub async fn build(configuration: Settings) -> Rocket<Build> {
-    let connection_pool = get_connection_pool(&configuration.database)
-        .await
-        .expect("Failed to connect to Postgres.");
+pub struct Application {
+    port: u16,
+    server: Server,
+}
 
-    let sender_email = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email address.");
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender_email,
-        configuration.email_client.authorization_token,
-        timeout,
-    )
-    .expect("Failed to build email client.");
+impl Application {
+    pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
+        let connection_pool = get_connection_pool(&configuration.database)
+            .await
+            .expect("Failed to connect to Postgres.");
 
-    get_rocket(configuration.application, connection_pool, email_client)
+        let sender_email = configuration
+            .email_client
+            .sender()
+            .expect("Invalid sender email address.");
+        let timeout = configuration.email_client.timeout();
+        let email_client = EmailClient::new(
+            configuration.email_client.base_url,
+            sender_email,
+            configuration.email_client.authorization_token,
+            timeout,
+        )
+        .expect("Failed to build email client.");
+
+        let address = format!(
+            "{}:{}",
+            configuration.application.host, configuration.application.port
+        );
+        let listener = TcpListener::bind(&address)?;
+        let port = listener.local_addr().unwrap().port();
+        let server = run(
+            listener,
+            connection_pool,
+            email_client,
+            configuration.application.base_url,
+        )?;
+        Ok(Self { port, server })
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
+        self.server.await
+    }
 }
 
 pub async fn get_connection_pool(configuration: &DatabaseSettings) -> Result<PgPool, sqlx::Error> {
@@ -37,23 +69,26 @@ pub async fn get_connection_pool(configuration: &DatabaseSettings) -> Result<PgP
 
 pub struct ApplicationBaseUrl(pub String);
 
-pub fn get_rocket(
-    app_configuration: ApplicationSettings,
-    connection_pool: PgPool,
+pub fn run(
+    listener: TcpListener,
+    db_pool: PgPool,
     email_client: EmailClient,
-) -> Rocket<Build> {
-    let figment = Figment::from(rocket::Config::default())
-        .merge(("port", app_configuration.port))
-        .merge(("address", app_configuration.address));
-
-    let base_url = ApplicationBaseUrl(app_configuration.base_url);
-
-    // The book uses `tracing_actix_web` to create requests ids
-    // I ignored this part as Rocket have not tracing yet, but check
-    // https://github.com/SergioBenitez/Rocket/pull/1579 in the future
-    rocket::custom(figment)
-        .manage(connection_pool)
-        .manage(email_client)
-        .manage(base_url)
-        .mount("/", routes![health_check_route, subscribe, confirm])
+    base_url: String,
+) -> Result<Server, std::io::Error> {
+    let db_pool = Data::new(db_pool);
+    let email_client = Data::new(email_client);
+    let base_url = Data::new(ApplicationBaseUrl(base_url));
+    let server = HttpServer::new(move || {
+        App::new()
+            .wrap(TracingLogger::default())
+            .route("/health_check", web::get().to(health_check_route))
+            .route("/subscriptions", web::post().to(subscribe))
+            .route("/subscriptions/confirm", web::get().to(confirm))
+            .app_data(db_pool.clone())
+            .app_data(email_client.clone())
+            .app_data(base_url.clone())
+    })
+    .listen(listener)?
+    .run();
+    Ok(server)
 }

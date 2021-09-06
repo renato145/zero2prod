@@ -4,7 +4,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn confirmations_without_token_are_rejected_with_404() {
     // Arrange
     let app = spawn_app().await;
@@ -15,10 +15,10 @@ async fn confirmations_without_token_are_rejected_with_404() {
         .unwrap();
 
     // Assert
-    assert_eq!(response.status().as_u16(), 404);
+    assert_eq!(response.status().as_u16(), 400);
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn link_returned_by_subscribe_returns_200() {
     // Arrange
     let app = spawn_app().await;
@@ -41,7 +41,7 @@ async fn link_returned_by_subscribe_returns_200() {
     assert_eq!(response.status().as_u16(), 200);
 }
 
-#[rocket::async_test]
+#[actix_rt::test]
 async fn clicking_confirmation_link_confirms_a_subscriber() {
     // Arrange
     let app = spawn_app().await;

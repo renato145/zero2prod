@@ -1,18 +1,16 @@
-use std::convert::{TryFrom, TryInto};
-
-use chrono::Utc;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use rocket::{form::Form, http::Status, State};
-use sqlx::{PgPool, Postgres, Transaction};
-use uuid::Uuid;
-
 use crate::{
     domain::{NewSubscriber, SubscriberEmail, SubscriberName},
     email_client::EmailClient,
     ApplicationBaseUrl,
 };
+use actix_web::{web, HttpResponse};
+use chrono::Utc;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use sqlx::{PgPool, Postgres, Transaction};
+use std::convert::{TryFrom, TryInto};
+use uuid::Uuid;
 
-#[derive(FromForm)]
+#[derive(serde::Deserialize)]
 pub struct FormData {
     email: String,
     name: String,
@@ -41,45 +39,43 @@ fn generate_subscription_token() -> String {
     name = "Adding a new subscriber",
     skip(form, pool, email_client, base_url),
     fields(
-        request_id = %Uuid::new_v4(),
         subcriber_email = %form.email,
         subcriber_name = %form.name
     )
 )]
-#[post("/subscriptions", data = "<form>")]
 pub async fn subscribe(
-    form: Form<FormData>,
-    pool: &State<PgPool>,
-    email_client: &State<EmailClient>,
-    base_url: &State<ApplicationBaseUrl>,
-) -> Status {
-    let new_subscriber = match form.into_inner().try_into() {
+    form: web::Form<FormData>,
+    pool: web::Data<PgPool>,
+    email_client: web::Data<EmailClient>,
+    base_url: web::Data<ApplicationBaseUrl>,
+) -> HttpResponse {
+    let new_subscriber = match form.0.try_into() {
         Ok(subcriber) => subcriber,
-        Err(_) => return Status::BadRequest,
+        Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
     let mut transaction = match pool.begin().await {
         Ok(transaction) => transaction,
-        Err(_) => return Status::InternalServerError,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     };
 
     let subscriber_id = match insert_subscriber(&mut transaction, &new_subscriber).await {
         Ok(subscriber_id) => subscriber_id,
-        Err(_) => return Status::InternalServerError,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     };
     let subscription_token = generate_subscription_token();
     if store_token(&mut transaction, subscriber_id, &subscription_token)
         .await
         .is_err()
     {
-        return Status::InternalServerError;
+        return HttpResponse::InternalServerError().finish();
     }
     if transaction.commit().await.is_err() {
-        return Status::InternalServerError;
+        return HttpResponse::InternalServerError().finish();
     }
 
     if send_confirmation_email(
-        email_client,
+        &email_client,
         new_subscriber,
         &base_url.0,
         &subscription_token,
@@ -87,10 +83,10 @@ pub async fn subscribe(
     .await
     .is_err()
     {
-        return Status::InternalServerError;
+        return HttpResponse::InternalServerError().finish();
     }
 
-    Status::Ok
+    HttpResponse::Ok().finish()
 }
 
 #[tracing::instrument(
