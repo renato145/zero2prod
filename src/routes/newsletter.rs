@@ -1,5 +1,5 @@
 use super::error_chain_fmt;
-use crate::{domain::SubscriberEmail, email_client::EmailClient};
+use crate::{domain::SubscriberEmail, email_client::EmailClient, telemetry::spawn_blocking};
 use actix_http::{
     header::{HeaderMap, HeaderValue},
     http::header,
@@ -102,13 +102,10 @@ async fn validate_credentials(
         .map_err(PublishError::UnexpectedError)?
         .ok_or_else(|| PublishError::AuthError(anyhow::anyhow!("Unkwown username.")))?;
 
-    let current_span = tracing::Span::current();
-    actix_web::rt::task::spawn_blocking(move || {
-        current_span.in_scope(|| verify_password_hash(expected_password_hash, credentials.password))
-    })
-    .await
-    .context("Failed to spawn blocking task.")
-    .map_err(PublishError::UnexpectedError)??;
+    spawn_blocking(move || verify_password_hash(expected_password_hash, credentials.password))
+        .await
+        .context("Failed to spawn blocking task.")
+        .map_err(PublishError::UnexpectedError)??;
 
     Ok(user_id)
 }
