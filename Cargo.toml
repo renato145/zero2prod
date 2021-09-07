@@ -33,6 +33,7 @@ validator = "0.14.0"
 rand = { version = "0.8", features = ["std_rng"] }
 tracing-actix-web = "0.4.0-beta.8"
 thiserror = "1"
+anyhow = "1"
 
 [dependencies.sqlx]
 version = "0.5.7"
