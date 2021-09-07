@@ -35,7 +35,7 @@ tracing-actix-web = "0.4.0-beta.8"
 thiserror = "1"
 anyhow = "1"
 base64 = "0.13"
-sha3 = "0.9"
+argon2 = { version = "0.3", features = ["std"] }
 
 [dependencies.sqlx]
 version = "0.5.7"
