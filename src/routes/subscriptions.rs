@@ -1,4 +1,9 @@
-use crate::{ApplicationBaseUrl, domain::{NewSubscriber, SubscriberEmail, SubscriberName}, email_client::EmailClient, error_chain_fmt};
+use super::error_chain_fmt;
+use crate::{
+    domain::{NewSubscriber, SubscriberEmail, SubscriberName},
+    email_client::EmailClient,
+    ApplicationBaseUrl,
+};
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
@@ -48,7 +53,7 @@ impl std::fmt::Debug for SubscribeError {
 }
 
 impl ResponseError for SubscribeError {
-    fn status_code(&self) -> actix_http::StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
             SubscribeError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -76,7 +81,7 @@ pub async fn subscribe(
     email_client: web::Data<EmailClient>,
     base_url: web::Data<ApplicationBaseUrl>,
 ) -> Result<HttpResponse, SubscribeError> {
-    let new_subscriber = form.0.try_into()?;
+    let new_subscriber = form.0.try_into().map_err(SubscribeError::ValidationError)?;
     let mut transaction = pool
         .begin()
         .await
