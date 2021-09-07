@@ -115,9 +115,7 @@ async fn confirmation_fails_if_there_is_a_critical_database_error() {
         .unwrap();
 
     // Act
-    let response = reqwest::get(confirmation_links.html)
-        .await
-        .unwrap();
+    let response = reqwest::get(confirmation_links.html).await.unwrap();
 
     // Assert
     assert_eq!(500, response.status().as_u16());
