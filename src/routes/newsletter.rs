@@ -92,42 +92,63 @@ struct Credentials {
     password: String,
 }
 
+#[tracing::instrument(name = "Validate credentials", skip(credentials, pool))]
 async fn validate_credentials(
     credentials: Credentials,
     pool: &PgPool,
 ) -> Result<uuid::Uuid, PublishError> {
+    let (user_id, expected_password_hash) = get_stored_credentials(&credentials.username, pool)
+        .await
+        .map_err(PublishError::UnexpectedError)?
+        .ok_or_else(|| PublishError::AuthError(anyhow::anyhow!("Unkwown username.")))?;
+
+    let current_span = tracing::Span::current();
+    actix_web::rt::task::spawn_blocking(move || {
+        current_span.in_scope(|| verify_password_hash(expected_password_hash, credentials.password))
+    })
+    .await
+    .context("Failed to spawn blocking task.")
+    .map_err(PublishError::UnexpectedError)??;
+
+    Ok(user_id)
+}
+
+#[tracing::instrument(name = "Get stored credentials", skip(username, pool))]
+async fn get_stored_credentials(
+    username: &str,
+    pool: &PgPool,
+) -> Result<Option<(uuid::Uuid, String)>, anyhow::Error> {
     let row = sqlx::query!(
         r#"
         SELECT user_id, password_hash
         FROM users
 		WHERE username = $1
         "#,
-        credentials.username
+        username
     )
     .fetch_optional(pool)
     .await
-    .context("Failed to perform a query to retrieve stored credentials.")
-    .map_err(PublishError::UnexpectedError)?;
+    .context("Failed to perform a query to retrieve stored credentials.")?
+    .map(|row| (row.user_id, row.password_hash));
+    Ok(row)
+}
 
-    let (expected_password_hash, user_id) = match row {
-        Some(row) => (row.password_hash, row.user_id),
-        None => {
-            return Err(PublishError::AuthError(anyhow::anyhow!(
-                "Unknown username."
-            )))
-        }
-    };
-
+#[tracing::instrument(
+    name = "Verify password hash",
+    skip(expected_password_hash, password_candidate)
+)]
+fn verify_password_hash(
+    expected_password_hash: String,
+    password_candidate: String,
+) -> Result<(), PublishError> {
     let expected_password_hash = PasswordHash::new(&expected_password_hash)
         .context("Failed to parse in PHC string format.")
         .map_err(PublishError::UnexpectedError)?;
 
     Argon2::default()
-        .verify_password(credentials.password.as_bytes(), &expected_password_hash)
+        .verify_password(password_candidate.as_bytes(), &expected_password_hash)
         .context("Invalid password.")
-        .map_err(PublishError::AuthError)?;
-
-    Ok(user_id)
+        .map_err(PublishError::AuthError)
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
