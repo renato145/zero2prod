@@ -30,7 +30,7 @@ pub struct TestApp {
     pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
-    test_user: TestUser,
+    pub test_user: TestUser,
 }
 
 pub struct ConfirmationLinks {
@@ -39,7 +39,7 @@ pub struct ConfirmationLinks {
 }
 
 pub struct TestUser {
-    pub user_id: Uuid,
+    user_id: Uuid,
     pub username: String,
     pub password: String,
 }
@@ -56,7 +56,7 @@ impl TestUser {
     async fn store(&self, pool: &PgPool) {
         let salt = SaltString::generate(&mut rand::thread_rng());
         let password_hash = Argon2::default()
-            .hash_password(self.username.as_bytes(), &salt)
+            .hash_password(self.password.as_bytes(), &salt)
             .unwrap()
             .to_string();
         sqlx::query!(
