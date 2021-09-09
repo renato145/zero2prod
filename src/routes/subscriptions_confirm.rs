@@ -42,9 +42,7 @@ pub async fn confirm(
         .await
         .context("Failed to retrieve subscriber_id associated with the provided token.")?
         .ok_or(ConfirmationError::UnkwownToken)?;
-    confirm_subscriber(&pool, subscriber_id)
-        .await
-        .context("Failed to update subscriber status to `confirmed`.")?;
+    confirm_subscriber(&pool, subscriber_id).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -63,12 +61,19 @@ pub async fn get_subscriber_id_from_token(
 }
 
 #[tracing::instrument(name = "Mark subscriber as confirmed", skip(subscriber_id, pool))]
-pub async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"UPDATE subscriptions SET status = 'confirmed' WHERE id = $1"#,
+pub async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), anyhow::Error> {
+    let result = sqlx::query!(
+        r#"
+        UPDATE subscriptions
+        SET status = 'confirmed'
+        WHERE id = $1 AND status = 'pending_confirmation'"#,
         subscriber_id
     )
     .execute(pool)
-    .await?;
+    .await
+    .context("Failed to update subscriber status to `confirmed`.")?;
+    if result.rows_affected() == 0 {
+        return Err(anyhow::anyhow!("Couldn't find subscriber to update."));
+    }
     Ok(())
 }
