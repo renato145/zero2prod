@@ -86,17 +86,30 @@ pub async fn subscribe(
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool.")?;
-    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
+
+    let subscriber_id = match check_existing_pending_subscriber(&mut transaction, &new_subscriber)
         .await
-        .context("Failed to insert new subscriber in the database.")?;
+        .context("Failed to check if new subscriber is present in the database.")?
+    {
+        Some(id) => id,
+        None => {
+            let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
+                .await
+                .context("Failed to insert new subscriber in the database.")?;
+            subscriber_id
+        }
+    };
+
     let subscription_token = generate_subscription_token();
     store_token(&mut transaction, subscriber_id, &subscription_token)
         .await
         .context("Failed to store the confirmation token for a new subscriber.")?;
+
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new subscriber.")?;
+
     send_confirmation_email(
         &email_client,
         new_subscriber,
@@ -107,6 +120,28 @@ pub async fn subscribe(
     .context("Failed to send a confirmation email.")?;
 
     Ok(HttpResponse::Ok().finish())
+}
+
+#[tracing::instrument(
+    name = "Checking if a new subscriber already exists in the database in pending state",
+    skip(transaction, new_subscriber)
+)]
+pub async fn check_existing_pending_subscriber(
+    transaction: &mut Transaction<'_, Postgres>,
+    new_subscriber: &NewSubscriber,
+) -> Result<Option<Uuid>, sqlx::Error> {
+    let result = sqlx::query!(
+        r#"
+        SELECT id
+        FROM subscriptions
+        wHERE email = $1 AND name = $2 AND status = 'pending_confirmation'
+        "#,
+        new_subscriber.email.as_ref(),
+        new_subscriber.name.as_ref()
+    )
+    .fetch_optional(transaction)
+    .await?;
+    Ok(result.map(|r| (r.id)))
 }
 
 #[tracing::instrument(

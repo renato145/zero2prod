@@ -75,13 +75,31 @@ async fn subscribe_sends_confirmation_email_with_link() {
         .mount(&app.email_server)
         .await;
 
-    // act
+    // Act
     app.post_subscriptions(body.into()).await;
 
     // Assert
     let email_request = &app.email_server.received_requests().await.unwrap()[0];
     let confirmation_links = app.get_confirmation_links(email_request);
     assert_eq!(confirmation_links.html, confirmation_links.plain_text);
+}
+
+#[actix_rt::test]
+async fn subscribe_two_times_sends_confirmation_email_twice() {
+    // Arrange
+    let app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&app.email_server)
+        .await;
+
+    // Act
+    app.post_subscriptions(body.into()).await;
+    app.post_subscriptions(body.into()).await;
 }
 
 #[actix_rt::test]
