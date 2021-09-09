@@ -131,6 +131,7 @@ mod tests {
 
     #[tokio::test]
     async fn send_email_sends_expected_request() {
+        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
@@ -144,6 +145,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        // Act
         let _res = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -151,6 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn send_email_success_if_server_returns_200() {
+        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
@@ -160,10 +163,12 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        // Act
         let res = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
 
+        // Assert
         assert_ok!(res);
     }
 
