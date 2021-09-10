@@ -5,7 +5,7 @@ use wiremock::{
 };
 
 #[actix_rt::test]
-async fn confirmations_without_token_are_rejected_with_404() {
+async fn confirmations_without_token_are_rejected_with_400() {
     // Arrange
     let app = spawn_app().await;
 
@@ -19,13 +19,30 @@ async fn confirmations_without_token_are_rejected_with_404() {
 }
 
 #[actix_rt::test]
-async fn confirmations_with_invalid_token_are_rejected_with_401() {
+async fn confirmations_with_invalid_token_are_rejected_with_400() {
     // Arrange
     let app = spawn_app().await;
 
     // Act
     let response = reqwest::get(&format!(
-        "{}/subscriptions/confirm?subscription_token=aaaaa",
+        "{}/subscriptions/confirm?subscription_token=123", // less than 25 chars
+        app.address
+    ))
+    .await
+    .unwrap();
+
+    // Assert
+    assert_eq!(response.status().as_u16(), 400);
+}
+
+#[actix_rt::test]
+async fn confirmations_with_non_existing_token_are_rejected_with_401() {
+    // Arrange
+    let app = spawn_app().await;
+
+    // Act
+    let response = reqwest::get(&format!(
+        "{}/subscriptions/confirm?subscription_token=aaaaaaaaaaaaaaaaaaaaaaaaa",
         app.address
     ))
     .await
