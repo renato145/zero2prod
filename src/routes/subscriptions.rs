@@ -106,7 +106,7 @@ pub async fn subscribe(
         &email_client,
         new_subscriber,
         &base_url.0,
-        subscription_token.as_ref(),
+        subscription_token,
     )
     .await?;
 
@@ -204,7 +204,11 @@ pub async fn store_token(
     Ok(())
 }
 
-static TEMPLATES: Lazy<Tera> = Lazy::new(|| Tera::new("templates/**/*.html").unwrap());
+static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
+    let mut tera = Tera::new("templates/**/*.html").unwrap();
+    tera.autoescape_on(vec![]);
+    tera
+});
 
 #[tracing::instrument(
     name = "Send a confirmation email to a new subscriber",
@@ -214,11 +218,12 @@ pub async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: NewSubscriber,
     base_url: &str,
-    subscription_token: &str,
+    subscription_token: SubscriptionToken,
 ) -> Result<(), anyhow::Error> {
     let confirmation_link = format!(
         "{}/subscriptions/confirm?subscription_token={}",
-        base_url, subscription_token
+        base_url,
+        subscription_token.as_ref()
     );
 
     let plain_body = format!(
@@ -233,8 +238,6 @@ pub async fn send_confirmation_email(
             .render("email.html", &context)
             .context("Failed to construct the HTML email template.")?
     };
-
-    tracing::warn!("{:#?}", html_body);
 
     email_client
         .send_email(&new_subscriber.email, "Welcome!", &html_body, &plain_body)
