@@ -1,6 +1,6 @@
 use super::error_chain_fmt;
 use crate::{
-    domain::{NewSubscriber, SubscriberEmail, SubscriberName},
+    domain::{NewSubscriber, SubscriberEmail, SubscriberName, SubscriptionToken},
     email_client::EmailClient,
     ApplicationBaseUrl,
 };
@@ -8,7 +8,6 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use chrono::Utc;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom, TryInto};
 use uuid::Uuid;
@@ -27,15 +26,6 @@ impl TryFrom<FormData> for NewSubscriber {
         let email = SubscriberEmail::parse(value.email)?;
         Ok(NewSubscriber { email, name })
     }
-}
-
-/// Generate a random 25-characters-long case-sensitive subscription token.
-fn generate_subscription_token() -> String {
-    let mut rng = thread_rng();
-    std::iter::repeat_with(|| rng.sample(Alphanumeric))
-        .map(char::from)
-        .take(25)
-        .collect()
 }
 
 #[derive(thiserror::Error)]
@@ -100,8 +90,8 @@ pub async fn subscribe(
         }
     };
 
-    let subscription_token = generate_subscription_token();
-    store_token(&mut transaction, subscriber_id, &subscription_token)
+    let subscription_token = SubscriptionToken::new();
+    store_token(&mut transaction, subscriber_id, subscription_token.as_ref())
         .await
         .context("Failed to store the confirmation token for a new subscriber.")?;
 
@@ -114,7 +104,7 @@ pub async fn subscribe(
         &email_client,
         new_subscriber,
         &base_url.0,
-        &subscription_token,
+        subscription_token.as_ref(),
     )
     .await
     .context("Failed to send a confirmation email.")?;

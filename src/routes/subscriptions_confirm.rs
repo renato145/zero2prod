@@ -1,3 +1,5 @@
+use crate::domain::SubscriptionToken;
+
 use super::error_chain_fmt;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
@@ -7,7 +9,7 @@ use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
 pub struct Parameters {
-    subscription_token: String,
+    subscription_token: SubscriptionToken,
 }
 
 #[derive(thiserror::Error)]
