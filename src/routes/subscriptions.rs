@@ -8,8 +8,10 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use chrono::Utc;
+use once_cell::sync::Lazy;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom, TryInto};
+use tera::Tera;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -106,8 +108,7 @@ pub async fn subscribe(
         &base_url.0,
         subscription_token.as_ref(),
     )
-    .await
-    .context("Failed to send a confirmation email.")?;
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -203,6 +204,8 @@ pub async fn store_token(
     Ok(())
 }
 
+static TEMPLATES: Lazy<Tera> = Lazy::new(|| Tera::new("templates/**/*.html").unwrap());
+
 #[tracing::instrument(
     name = "Send a confirmation email to a new subscriber",
     skip(email_client, new_subscriber, base_url, subscription_token)
@@ -212,22 +215,29 @@ pub async fn send_confirmation_email(
     new_subscriber: NewSubscriber,
     base_url: &str,
     subscription_token: &str,
-) -> Result<(), reqwest::Error> {
+) -> Result<(), anyhow::Error> {
     let confirmation_link = format!(
         "{}/subscriptions/confirm?subscription_token={}",
         base_url, subscription_token
     );
+
     let plain_body = format!(
         "Welcome to our newsletter!\nVisit {} to confirm your subscription.",
         confirmation_link
     );
-    let html_body = format!(
-        "Welcome to our newsletter!<br />\
-        Click <a href=\"{}\">here</a> to confirm your subscription.",
-        confirmation_link
-    );
+
+    let html_body = {
+        let mut context = tera::Context::new();
+        context.insert("confirmation_link", &confirmation_link);
+        TEMPLATES
+            .render("email.html", &context)
+            .context("Failed to construct the HTML email template.")?
+    };
+
+    tracing::warn!("{:#?}", html_body);
 
     email_client
         .send_email(&new_subscriber.email, "Welcome!", &html_body, &plain_body)
         .await
+        .context("Failed to send a confirmation email.")
 }

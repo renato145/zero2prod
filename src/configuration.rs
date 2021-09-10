@@ -1,11 +1,10 @@
+use crate::domain::SubscriberEmail;
 use serde::Deserialize;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
-
-use crate::domain::SubscriberEmail;
 
 #[derive(Clone, Deserialize)]
 pub struct Settings {
