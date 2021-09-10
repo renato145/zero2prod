@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::error_chain_fmt;
 use crate::{domain::SubscriberEmail, email_client::EmailClient, telemetry::spawn_blocking};
 use actix_http::{
@@ -216,7 +218,7 @@ async fn get_confirmed_subscribers(
     .fetch_all(pool)
     .await?
     .into_iter()
-    .map(|r| match SubscriberEmail::parse(r.email) {
+    .map(|r| match SubscriberEmail::from_str(&r.email) {
         Ok(email) => Ok(ConfirmedSubscriber { email }),
         Err(error) => Err(anyhow::anyhow!(error)),
     })

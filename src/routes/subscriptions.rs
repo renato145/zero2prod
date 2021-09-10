@@ -1,6 +1,6 @@
 use super::error_chain_fmt;
 use crate::{
-    domain::{NewSubscriber, SubscriberEmail, SubscriberName, SubscriptionToken},
+    domain::{NewSubscriber, SubscriptionToken},
     email_client::EmailClient,
     ApplicationBaseUrl,
 };
@@ -22,8 +22,8 @@ impl TryFrom<FormData> for NewSubscriber {
     type Error = String;
 
     fn try_from(value: FormData) -> Result<Self, Self::Error> {
-        let name = SubscriberName::parse(value.name)?;
-        let email = SubscriberEmail::parse(value.email)?;
+        let name = value.name.parse()?;
+        let email = value.email.parse()?;
         Ok(NewSubscriber { email, name })
     }
 }

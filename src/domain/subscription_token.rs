@@ -32,7 +32,7 @@ impl FromStr for SubscriptionToken {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() == 25 {
-            Ok(Self(s.into()))
+            Ok(Self(s.to_owned()))
         } else {
             Err(format!("Token {:?} is not in a valid format.", s))
         }
