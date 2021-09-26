@@ -1,6 +1,5 @@
-use crate::domain::SubscriptionToken;
-
 use super::error_chain_fmt;
+use crate::domain::SubscriptionToken;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
