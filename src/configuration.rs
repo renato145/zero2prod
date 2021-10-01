@@ -1,6 +1,9 @@
 use crate::domain::SubscriberEmail;
 use serde::Deserialize;
-use sqlx::{ConnectOptions, postgres::{PgConnectOptions, PgSslMode}};
+use sqlx::{
+    postgres::{PgConnectOptions, PgSslMode},
+    ConnectOptions,
+};
 use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
