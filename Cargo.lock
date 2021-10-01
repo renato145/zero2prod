@@ -3010,6 +3010,7 @@ dependencies = [
  "config 0.11.0",
  "fake",
  "linkify",
+ "log",
  "once_cell",
  "quickcheck",
  "quickcheck_macros",
