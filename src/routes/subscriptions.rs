@@ -77,7 +77,6 @@ pub async fn subscribe(
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool.")?;
-
     let subscriber_id = match check_existing_pending_subscriber(&mut transaction, &new_subscriber)
         .await
         .context("Failed to check if new subscriber is present in the database.")?
@@ -90,17 +89,14 @@ pub async fn subscribe(
             subscriber_id
         }
     };
-
     let subscription_token = SubscriptionToken::new();
     store_token(&mut transaction, subscriber_id, subscription_token.as_ref())
         .await
         .context("Failed to store the confirmation token for a new subscriber.")?;
-
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new subscriber.")?;
-
     send_confirmation_email(
         &email_client,
         new_subscriber,
