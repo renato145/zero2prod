@@ -1,4 +1,5 @@
 use crate::domain::SubscriberEmail;
+use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
@@ -36,22 +37,22 @@ impl EmailClientSettings {
 }
 
 #[derive(Clone, Deserialize)]
-pub struct DatabaseSettings {
-    pub username: String,
-    pub password: String,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub port: u16,
-    pub host: String,
-    pub database_name: String,
-    pub require_ssl: bool,
-}
-
-#[derive(Clone, Deserialize)]
 pub struct ApplicationSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
     pub base_url: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct DatabaseSettings {
+    pub username: String,
+    pub password: Secret<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub port: u16,
+    pub host: String,
+    pub database_name: String,
+    pub require_ssl: bool,
 }
 
 impl DatabaseSettings {
@@ -66,7 +67,7 @@ impl DatabaseSettings {
         PgConnectOptions::new()
             .host(&self.host)
             .username(&self.username)
-            .password(&self.password)
+            .password(self.password.expose_secret())
             .port(self.port)
             .ssl_mode(ssl_mode)
     }
@@ -74,17 +75,6 @@ impl DatabaseSettings {
         let mut options = self.without_db().database(&self.database_name);
         options.log_statements(log::LevelFilter::Trace);
         options
-    }
-}
-
-impl From<DatabaseSettings> for PgConnectOptions {
-    fn from(settings: DatabaseSettings) -> Self {
-        PgConnectOptions::new()
-            .username(&settings.username)
-            .password(&settings.password)
-            .port(settings.port)
-            .host(&settings.host)
-            .database(&settings.database_name)
     }
 }
 
