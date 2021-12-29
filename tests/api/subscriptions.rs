@@ -4,7 +4,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_returns_200_for_valid_form_data() {
     // Arrange
     let app = spawn_app().await;
@@ -24,7 +24,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_persist_the_new_subscribe() {
     // Arrange
     let app = spawn_app().await;
@@ -44,7 +44,7 @@ async fn subscribe_persist_the_new_subscribe() {
     assert_eq!(saved.status, "pending_confirmation");
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_sends_confirmation_email_for_valid_data() {
     // Arrange
     let app = spawn_app().await;
@@ -61,7 +61,7 @@ async fn subscribe_sends_confirmation_email_for_valid_data() {
     app.post_subscriptions(body.into()).await;
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_sends_confirmation_email_with_link() {
     // Arrange
     let app = spawn_app().await;
@@ -83,7 +83,7 @@ async fn subscribe_sends_confirmation_email_with_link() {
     assert_eq!(confirmation_links.html, confirmation_links.plain_text);
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_two_times_sends_confirmation_email_twice() {
     // Arrange
     let app = spawn_app().await;
@@ -101,7 +101,7 @@ async fn subscribe_two_times_sends_confirmation_email_twice() {
     app.post_subscriptions(body.into()).await;
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_returns_client_error_when_data_is_missing() {
     // Arrange
     let app = spawn_app().await;
@@ -125,7 +125,7 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
     }
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
@@ -149,7 +149,7 @@ async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     }
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn subscribe_fail_if_there_is_a_fatal_database_error() {
     // Arrange
     let app = spawn_app().await;

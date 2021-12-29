@@ -1,7 +1,6 @@
 use super::error_chain_fmt;
 use crate::domain::SubscriptionToken;
-use actix_http::StatusCode;
-use actix_web::{web, HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -28,8 +27,8 @@ impl std::fmt::Debug for ConfirmationError {
 impl ResponseError for ConfirmationError {
     fn status_code(&self) -> StatusCode {
         match self {
-            ConfirmationError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            ConfirmationError::UnkwownToken => StatusCode::UNAUTHORIZED,
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::UnkwownToken => StatusCode::UNAUTHORIZED,
         }
     }
 }

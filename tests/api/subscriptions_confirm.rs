@@ -4,7 +4,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-#[actix_rt::test]
+#[tokio::test]
 async fn confirmations_without_token_are_rejected_with_400() {
     // Arrange
     let app = spawn_app().await;
@@ -18,7 +18,7 @@ async fn confirmations_without_token_are_rejected_with_400() {
     assert_eq!(response.status().as_u16(), 400);
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn confirmations_with_invalid_token_are_rejected_with_400() {
     // Arrange
     let app = spawn_app().await;
@@ -35,7 +35,7 @@ async fn confirmations_with_invalid_token_are_rejected_with_400() {
     assert_eq!(response.status().as_u16(), 400);
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn confirmations_with_non_existing_token_are_rejected_with_401() {
     // Arrange
     let app = spawn_app().await;
@@ -52,7 +52,7 @@ async fn confirmations_with_non_existing_token_are_rejected_with_401() {
     assert_eq!(response.status().as_u16(), 401);
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn link_returned_by_subscribe_returns_200() {
     // Arrange
     let app = spawn_app().await;
@@ -75,7 +75,7 @@ async fn link_returned_by_subscribe_returns_200() {
     assert_eq!(response.status().as_u16(), 200);
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn clicking_confirmation_link_confirms_a_subscriber() {
     // Arrange
     let app = spawn_app().await;
@@ -109,7 +109,7 @@ async fn clicking_confirmation_link_confirms_a_subscriber() {
     assert_eq!(saved.status, "confirmed");
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn clicking_confirmation_link_twice_returns_500() {
     // Arrange
     let app = spawn_app().await;
@@ -137,7 +137,7 @@ async fn clicking_confirmation_link_twice_returns_500() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[tokio::test]
 async fn confirmation_fails_if_there_is_a_critical_database_error() {
     // Arrange
     let app = spawn_app().await;

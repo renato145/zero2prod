@@ -4,8 +4,7 @@ use crate::{
     email_client::EmailClient,
     ApplicationBaseUrl,
 };
-use actix_http::StatusCode;
-use actix_web::{web, HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use chrono::Utc;
 use once_cell::sync::Lazy;
