@@ -1,5 +1,7 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.54.0 as chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.57.0 as chef
 WORKDIR /app
+# Install linker deps
+RUN apt update && apt install lld clang -y
 
 # Compute lock-file
 FROM chef as planner
