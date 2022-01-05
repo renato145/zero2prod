@@ -1,4 +1,4 @@
-use super::error_chain_fmt;
+use super::{error_chain_fmt, TEMPLATES};
 use crate::{
     domain::{NewSubscriber, SubscriptionToken},
     email_client::EmailClient,
@@ -7,10 +7,8 @@ use crate::{
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use chrono::Utc;
-use once_cell::sync::Lazy;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom, TryInto};
-use tera::Tera;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -198,12 +196,6 @@ pub async fn store_token(
     .map_err(StoreTokenError)?;
     Ok(())
 }
-
-static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
-    let mut tera = Tera::new("templates/**/*.html").unwrap();
-    tera.autoescape_on(vec![]);
-    tera
-});
 
 #[tracing::instrument(
     name = "Send a confirmation email to a new subscriber",

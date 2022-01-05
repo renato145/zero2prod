@@ -1,12 +1,22 @@
 mod health_check;
+mod home;
 mod newsletter;
 mod subscriptions;
 mod subscriptions_confirm;
 
 pub use health_check::*;
+pub use home::*;
 pub use newsletter::*;
+use once_cell::sync::Lazy;
 pub use subscriptions::*;
 pub use subscriptions_confirm::*;
+use tera::Tera;
+
+static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
+    let mut tera = Tera::new("templates/**/*.html").unwrap();
+    tera.autoescape_on(vec![]);
+    tera
+});
 
 fn error_chain_fmt(
     e: &impl std::error::Error,
