@@ -5,17 +5,18 @@
     <title>Login</title>
   </head>
   <body>
+    {% if error %}
+      <p><i>{{error}}</p></i>
+    {% endif %}
     <form action="/login" method="post">
       <label>
         Username
         <input type="text" placeholder="Enter Username" name="username" />
       </label>
-
       <label
         >Password
         <input type="password" placeholder="Enter Password" name="password"
       /></label>
-
       <button type="submit">Login</button>
     </form>
   </body>
