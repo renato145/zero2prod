@@ -5,8 +5,8 @@
     <title>Login</title>
   </head>
   <body>
-    {% if error %}
-      <p><i>{{error}}</p></i>
+    {% if error_msg %}
+      <p><i>{{error_msg}}</p></i>
     {% endif %}
     <form action="/login" method="post">
       <label>

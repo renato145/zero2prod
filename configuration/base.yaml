@@ -1,6 +1,6 @@
 application:
   port: 8000
-  hmac_secret: "some-super-long-and-secret-random-key-for-message-integrity"
+  hmac_secret: "some-super-long-and-secret-random-key-for-message-integrity-with-at-least-64-bytes"
 database:
   host: "localhost"
   port: 5432
