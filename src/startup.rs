@@ -77,9 +77,6 @@ pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
 
 pub struct ApplicationBaseUrl(pub String);
 
-#[derive(Clone)]
-pub struct HmacSecret(pub Secret<String>);
-
 pub async fn run(
     listener: TcpListener,
     db_pool: PgPool,
@@ -106,14 +103,14 @@ pub async fn run(
             .route("/", web::get().to(home))
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
-            .route("/admin/dashboard", web::get().to(admin_dashboard))
-            .route("/admin/password", web::get().to(change_password_form))
-            .route("/admin/password", web::post().to(change_password))
-            .route("/admin/logout", web::post().to(log_out))
             .route("/health_check", web::get().to(health_check_route))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .route("/newsletters", web::post().to(publish_newsletter))
+            .route("/admin/dashboard", web::get().to(admin_dashboard))
+            .route("/admin/password", web::get().to(change_password_form))
+            .route("/admin/password", web::post().to(change_password))
+            .route("/admin/logout", web::post().to(log_out))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
