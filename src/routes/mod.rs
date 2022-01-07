@@ -18,7 +18,7 @@ use tera::Tera;
 
 static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     let mut tera = Tera::new("templates/**/*.html").unwrap();
-    tera.autoescape_on(vec![".html"]);
+    tera.autoescape_on(vec![]);
     tera
 });
 
