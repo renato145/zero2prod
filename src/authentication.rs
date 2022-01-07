@@ -1,8 +1,15 @@
 use crate::telemetry::spawn_blocking_with_tracing;
 use anyhow::Context;
+use anyhow::Result;
+use argon2::password_hash::SaltString;
+use argon2::Algorithm;
+use argon2::Params;
+use argon2::PasswordHasher;
+use argon2::Version;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
@@ -84,4 +91,36 @@ pub async fn get_stored_credentials(
     .context("Failed to perform a query to retrieve stored credentials.")?
     .map(|row| (row.user_id, Secret::new(row.password_hash)));
     Ok(row)
+}
+
+#[tracing::instrument(name = "Change password", skip(password, pool))]
+pub async fn change_password(user_id: Uuid, password: Secret<String>, pool: &PgPool) -> Result<()> {
+    let password_hash = spawn_blocking_with_tracing(move || compute_password_hash(password))
+        .await?
+        .context("Failed to hash password")?;
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET password_hash = $1
+        WHERE user_id = $2
+        "#,
+        password_hash.expose_secret(),
+        user_id
+    )
+    .execute(pool)
+    .await
+    .context("Failed to change user's password in the database.")?;
+    Ok(())
+}
+
+fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>> {
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    let password_hash = Argon2::new(
+        Algorithm::Argon2id,
+        Version::V0x13,
+        Params::new(15000, 2, 1, None).unwrap(),
+    )
+    .hash_password(password.expose_secret().as_bytes(), &salt)?
+    .to_string();
+    Ok(Secret::new(password_hash))
 }

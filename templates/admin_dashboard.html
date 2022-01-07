@@ -6,5 +6,15 @@
   </head>
   <body>
     <p>Welcome {{username}}!</p>
+    <p>Available actions:</p>
+    <ol>
+      <li><a href="/admin/password">Change password</a></li>
+      <li>
+        <a href="javascript: document.logoutForm.submit()">Logout</a>
+        <form action="logoutForm" type="submit" method="post">
+          <input hidden type="submit" value="Logout" />
+        </form>
+      </li>
+    </ol>
   </body>
 </html>

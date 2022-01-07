@@ -2,8 +2,9 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     routes::error_chain_fmt,
     session_state::TypedSession,
+    utils::see_other,
 };
-use actix_web::{error::InternalError, http::header::LOCATION, web, HttpResponse};
+use actix_web::{error::InternalError, web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::Secret;
 use serde::Deserialize;
@@ -51,9 +52,7 @@ pub async fn login(
             session
                 .insert_user_id(user_id)
                 .map_err(|e| login_redirect(LoginError::UnexpectedError(e.into())))?;
-            Ok(HttpResponse::SeeOther()
-                .insert_header((LOCATION, "/admin/dashboard"))
-                .finish())
+            Ok(see_other("/admin/dashboard"))
         }
         Err(e) => {
             let e = match e {
@@ -68,8 +67,5 @@ pub async fn login(
 // Redirect to the login page with an error message.
 fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     FlashMessage::error(e.to_string()).send();
-    let response = HttpResponse::SeeOther()
-        .insert_header((LOCATION, "/login"))
-        .finish();
-    InternalError::from_response(e, response)
+    InternalError::from_response(e, see_other("/login"))
 }

@@ -1,14 +1,12 @@
-use crate::{routes::TEMPLATES, session_state::TypedSession};
+use crate::{
+    routes::TEMPLATES,
+    session_state::TypedSession,
+    utils::{e500, see_other},
+};
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use anyhow::{Context, Result};
-use reqwest::header::LOCATION;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-// Return an opaque 500 while preserving the error's root cause
-fn e500<T>(e: T) -> actix_web::error::InternalError<T> {
-    actix_web::error::InternalError::from_response(e, HttpResponse::InternalServerError().finish())
-}
 
 pub async fn admin_dashboard(
     session: TypedSession,
@@ -17,9 +15,7 @@ pub async fn admin_dashboard(
     let username = if let Some(user_id) = session.get_user_id().map_err(e500)? {
         get_username(user_id, &pool).await.map_err(e500)?
     } else {
-        return Ok(HttpResponse::SeeOther()
-            .insert_header((LOCATION, "/login"))
-            .finish());
+        return Ok(see_other("/login"));
     };
     let html_body = {
         let mut context = tera::Context::new();
@@ -34,7 +30,7 @@ pub async fn admin_dashboard(
 }
 
 #[tracing::instrument(name = "Get username", skip(pool))]
-async fn get_username(user_id: Uuid, pool: &PgPool) -> Result<String> {
+pub async fn get_username(user_id: Uuid, pool: &PgPool) -> Result<String> {
     let row = sqlx::query!(
         r#"
         SELECT username
