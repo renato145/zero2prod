@@ -1,3 +1,4 @@
+use anyhow::Result;
 use zero2prod::{
     configuration::get_configuration,
     telemetry::{get_subscriber, init_subscriber},
@@ -5,7 +6,7 @@ use zero2prod::{
 };
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<()> {
     let subscriber = get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
 

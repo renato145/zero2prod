@@ -13,9 +13,10 @@ use std::{
 
 #[derive(Clone, Deserialize)]
 pub struct Settings {
-    pub database: DatabaseSettings,
     pub application: ApplicationSettings,
+    pub database: DatabaseSettings,
     pub email_client: EmailClientSettings,
+    pub redis_uri: Secret<String>,
 }
 
 #[derive(Clone, Deserialize)]
