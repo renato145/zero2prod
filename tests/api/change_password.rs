@@ -67,7 +67,7 @@ async fn new_password_fields_must_match() {
     let html_page = response.text().await.unwrap();
     assert!(html_page.contains(
         "<p><i>You entered two different new passwords - \
-        the field values must match.</p></i>",
+        the field values must match.</i></p>",
     ));
 }
 
@@ -102,7 +102,7 @@ async fn current_password_must_be_valid() {
     // Act - Follow the redirect
     let response = app.get_change_password().await;
     let html_page = response.text().await.unwrap();
-    assert!(html_page.contains("<p><i>The current password is incorret.</p></i>",));
+    assert!(html_page.contains("<p><i>The current password is incorret.</i></p>",));
 }
 
 #[tokio::test]
@@ -140,7 +140,7 @@ async fn changing_password_works() {
 
     // Act - Follow the redirect
     let html_page = app.get_change_password().await.text().await.unwrap();
-    assert!(html_page.contains("<p><i>Your password has been changed.</p></i>",));
+    assert!(html_page.contains("<p><i>Your password has been changed.</i></p>",));
 
     // Act - Logout
     let response = app.post_logout().await;
@@ -149,7 +149,7 @@ async fn changing_password_works() {
 
     // Act - Follow the redirect
     let html_page = app.get_login().await.text().await.unwrap();
-    assert!(html_page.contains("<p><i>Your have successfully logged out.</p></i>",));
+    assert!(html_page.contains("<p><i>Your have successfully logged out.</i></p>",));
 
     // Act - Login using the new password
     let response = app

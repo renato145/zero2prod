@@ -17,12 +17,12 @@ async fn an_error_flash_message_is_set_on_failure() {
     // Act - Follow the redirect
     let response = app.get_login().await;
     let html_page = response.text().await.unwrap();
-    assert!(html_page.contains(r#"<p><i>Authentication failed</p></i>"#));
+    assert!(html_page.contains(r#"<p><i>Authentication failed</i></p>"#));
 
     // Act - Reload the login page
     let response = app.get_login().await;
     let html_page = response.text().await.unwrap();
-    assert!(!html_page.contains(r#"<p><i>Authentication failed</p></i>"#));
+    assert!(!html_page.contains(r#"<p><i>Authentication failed</i></p>"#));
 }
 
 #[tokio::test]
