@@ -5,7 +5,7 @@ use zero2prod::{
     Application,
 };
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     let subscriber = get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
