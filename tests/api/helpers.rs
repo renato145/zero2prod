@@ -16,7 +16,6 @@ use zero2prod::{
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
-
     if std::env::var("TEST_LOG").is_ok() {
         let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
         init_subscriber(subscriber);
@@ -105,7 +104,6 @@ impl TestApp {
             confirmation_link.set_port(Some(self.port)).unwrap();
             confirmation_link
         };
-        dbg!(&body);
         let html = get_link(&body["HtmlBody"].as_str().unwrap());
         let plain_text = get_link(&body["TextBody"].as_str().unwrap());
         ConfirmationLinks { html, plain_text }
@@ -232,7 +230,7 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to connect to Postgres.");
 
     connection
-        .execute(&*format!(r#"CREATE DATABASE "{}""#, config.database_name))
+        .execute(&*format!(r#"CREATE DATABASE "{}";"#, config.database_name))
         .await
         .expect("Failed to create database.");
 

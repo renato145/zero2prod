@@ -26,9 +26,6 @@ pub async fn change_password(
         Some(user_id) => user_id,
         None => return Ok(see_other("/login")),
     };
-    if session.get_user_id().map_err(e500)?.is_none() {
-        return Ok(see_other("/login"));
-    }
     if form.new_password.expose_secret() != form.new_password_check.expose_secret() {
         FlashMessage::error(
             "You entered two different new passwords - the field values must match.",
