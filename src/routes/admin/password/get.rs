@@ -4,7 +4,7 @@ use crate::{
     utils::{e500, see_other},
 };
 use actix_web::{http::header::ContentType, HttpResponse};
-use actix_web_flash_messages::{IncomingFlashMessages, Level};
+use actix_web_flash_messages::IncomingFlashMessages;
 
 pub async fn change_password_form(
     session: TypedSession,
@@ -14,7 +14,7 @@ pub async fn change_password_form(
         return Ok(see_other("/login"));
     }
     let mut error_msg = String::new();
-    for m in flash_messages.iter().filter(|m| m.level() == Level::Error) {
+    for m in flash_messages.iter() {
         error_msg.push_str(m.content());
     }
     let error_msg = if error_msg.is_empty() {

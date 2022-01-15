@@ -102,7 +102,7 @@ async fn current_password_must_be_valid() {
     // Act - Follow the redirect
     let response = app.get_change_password().await;
     let html_page = response.text().await.unwrap();
-    assert!(html_page.contains("<p><i>The current password is incorret.</i></p>",));
+    assert!(html_page.contains("<p><i>The current password is incorrect.</i></p>",));
 }
 
 #[tokio::test]
@@ -149,7 +149,7 @@ async fn changing_password_works() {
 
     // Act - Follow the redirect
     let html_page = app.get_login().await.text().await.unwrap();
-    assert!(html_page.contains("<p><i>Your have successfully logged out.</i></p>",));
+    assert!(html_page.contains("<p><i>You have successfully logged out.</i></p>"));
 
     // Act - Login using the new password
     let response = app
