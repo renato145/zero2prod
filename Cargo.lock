@@ -623,9 +623,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "cookie"
-version = "0.14.4"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03a5d7b21829bc7b4bf4754a978a241ae54ea55a40f92bb20216e54096f4b951"
+checksum = "d5f1c7727e460397e56abc4bddc1d49e07a1ad78fc98eb2e1c8f032a58a2f80d"
 dependencies = [
  "percent-encoding",
  "time 0.2.27",
@@ -652,11 +652,11 @@ dependencies = [
 
 [[package]]
 name = "cookie_store"
-version = "0.12.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3818dfca4b0cb5211a659bbcbb94225b7127407b2b135e650d717bfb78ab10d3"
+checksum = "b3f7034c0932dc36f5bd8ec37368d971346809435824f277cb3b8299fc56167c"
 dependencies = [
- "cookie 0.14.4",
+ "cookie 0.15.1",
  "idna",
  "log",
  "publicsuffix",
@@ -1378,17 +1378,15 @@ dependencies = [
 
 [[package]]
 name = "hyper-rustls"
-version = "0.22.1"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f9f7a97316d44c0af9b0301e65010573a853a9fc97046d7331d7f6bc0fd5a64"
+checksum = "d87c48c02e0dc5e3b849a2041db3029fd066650f8f717c07bf8ed78ccb895cac"
 dependencies = [
- "futures-util",
+ "http",
  "hyper",
- "log",
- "rustls",
+ "rustls 0.20.2",
  "tokio",
- "tokio-rustls",
- "webpki",
+ "tokio-rustls 0.23.2",
 ]
 
 [[package]]
@@ -2010,13 +2008,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "publicsuffix"
-version = "1.5.6"
+name = "psl-types"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95b4ce31ff0a27d93c8de1849cf58162283752f065a90d508f1105fa6c9a213f"
+checksum = "e8eda7c62d9ecaafdf8b62374c006de0adf61666ae96a96ba74a37134aa4e470"
+
+[[package]]
+name = "publicsuffix"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "292972edad6bbecc137ab84c5e36421a4a6c979ea31d3cc73540dd04315b33e1"
 dependencies = [
+ "byteorder",
+ "hashbrown",
  "idna",
- "url",
+ "psl-types",
 ]
 
 [[package]]
@@ -2211,13 +2217,13 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.4"
+version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "246e9f61b9bb77df069a947682be06e31ac43ea37862e244a69f177694ea6d22"
+checksum = "7c4e0a76dc12a116108933f6301b95e83634e0c47b0afbed6abbaa0601e99258"
 dependencies = [
  "base64",
  "bytes",
- "cookie 0.14.4",
+ "cookie 0.15.1",
  "cookie_store",
  "encoding_rs",
  "futures-core",
@@ -2233,18 +2239,19 @@ dependencies = [
  "mime",
  "percent-encoding",
  "pin-project-lite",
- "rustls",
+ "proc-macro-hack",
+ "rustls 0.20.2",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "serde_urlencoded",
- "time 0.2.27",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.23.2",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots",
+ "webpki-roots 0.22.2",
  "winreg",
 ]
 
@@ -2290,8 +2297,29 @@ dependencies = [
  "base64",
  "log",
  "ring",
- "sct",
- "webpki",
+ "sct 0.6.1",
+ "webpki 0.21.4",
+]
+
+[[package]]
+name = "rustls"
+version = "0.20.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d37e5e2290f3e040b594b1a9e04377c2c671f1a1cfd9bfdef82106ac1c113f84"
+dependencies = [
+ "log",
+ "ring",
+ "sct 0.7.0",
+ "webpki 0.22.0",
+]
+
+[[package]]
+name = "rustls-pemfile"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5eebeaeb360c87bfb72e84abdb3447159c0eaececf1bef2aecd65a8be949d1c9"
+dependencies = [
+ "base64",
 ]
 
 [[package]]
@@ -2330,6 +2358,16 @@ name = "sct"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b362b83898e0e69f38515b82ee15aa80636befe47c3b6d3d89a911e78fc228ce"
+dependencies = [
+ "ring",
+ "untrusted",
+]
+
+[[package]]
+name = "sct"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d53dcdb7c9f8158937a7981b48accfd39a43af418591a5d008c7b22b5e1b7ca4"
 dependencies = [
  "ring",
  "untrusted",
@@ -2640,7 +2678,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "rand 0.8.4",
- "rustls",
+ "rustls 0.19.1",
  "serde",
  "serde_json",
  "sha-1 0.9.8",
@@ -2653,8 +2691,8 @@ dependencies = [
  "tokio-stream",
  "url",
  "uuid",
- "webpki",
- "webpki-roots",
+ "webpki 0.21.4",
+ "webpki-roots 0.21.1",
  "whoami",
 ]
 
@@ -2690,7 +2728,7 @@ dependencies = [
  "actix-rt",
  "once_cell",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.22.0",
 ]
 
 [[package]]
@@ -2975,9 +3013,20 @@ version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc6844de72e57df1980054b38be3a9f4702aba4858be64dd700181a8a6d0e1b6"
 dependencies = [
- "rustls",
+ "rustls 0.19.1",
  "tokio",
- "webpki",
+ "webpki 0.21.4",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a27d5f2b839802bd8267fa19b0530f5a08b9c08cd417976be2a65d130fe1c11b"
+dependencies = [
+ "rustls 0.20.2",
+ "tokio",
+ "webpki 0.22.0",
 ]
 
 [[package]]
@@ -3346,8 +3395,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ce9b1b516211d33767048e5d47fa2a381ed8b76fc48d2ce4aa39877f9f183e0"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
@@ -3428,12 +3475,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "webpki"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f095d78192e208183081cc07bc5515ef55216397af48b873e5edcd72637fa1bd"
+dependencies = [
+ "ring",
+ "untrusted",
+]
+
+[[package]]
 name = "webpki-roots"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aabe153544e473b775453675851ecc86863d2a81d786d741f6b76778f2a48940"
 dependencies = [
- "webpki",
+ "webpki 0.21.4",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.22.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "552ceb903e957524388c4d3475725ff2c8b7960922063af6ce53c9a43da07449"
+dependencies = [
+ "webpki 0.22.0",
 ]
 
 [[package]]
