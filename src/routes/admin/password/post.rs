@@ -3,10 +3,7 @@ use crate::{
     routes::admin::{dashboard::get_username, middleware::UserId},
     utils::{e500, see_other},
 };
-use actix_web::{
-    web::{self, ReqData},
-    HttpResponse,
-};
+use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -20,7 +17,7 @@ pub struct FormData {
 }
 
 pub async fn change_password(
-    user_id: ReqData<UserId>,
+    user_id: UserId,
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, actix_web::Error> {

@@ -4,10 +4,11 @@ use crate::{
 };
 use actix_session::SessionExt;
 use actix_web::{
-    dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage,
+    dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform},
+    error::ErrorInternalServerError,
+    Error, FromRequest, HttpMessage, HttpRequest,
 };
-use futures::future::{ok, LocalBoxFuture, Ready};
+use futures::future::{err, ok, LocalBoxFuture, Ready};
 use std::{
     rc::Rc,
     task::{Context, Poll},
@@ -16,6 +17,21 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct UserId(pub Uuid);
+
+impl FromRequest for UserId {
+    type Error = Error;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
+        if let Some(id) = req.req_data().get::<Self>() {
+            ok(id.clone())
+        } else {
+            err(ErrorInternalServerError(
+                "Missing expected request extension data",
+            ))
+        }
+    }
+}
 
 pub struct CheckLoginMiddleware<S> {
     service: Rc<S>,

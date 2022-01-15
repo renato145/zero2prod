@@ -1,9 +1,9 @@
 use crate::routes::{admin::middleware::UserId, TEMPLATES};
-use actix_web::{http::header::ContentType, web::ReqData, HttpResponse};
+use actix_web::{http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
 
 pub async fn change_password_form(
-    _user_id: ReqData<UserId>,
+    _user_id: UserId,
     flash_messages: IncomingFlashMessages,
 ) -> Result<HttpResponse, actix_web::Error> {
     let mut error_msg = String::new();
