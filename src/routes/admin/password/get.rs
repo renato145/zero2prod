@@ -1,18 +1,11 @@
-use crate::{
-    routes::TEMPLATES,
-    session_state::TypedSession,
-    utils::{e500, see_other},
-};
-use actix_web::{http::header::ContentType, HttpResponse};
+use crate::routes::{admin::middleware::UserId, TEMPLATES};
+use actix_web::{http::header::ContentType, web::ReqData, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
 
 pub async fn change_password_form(
-    session: TypedSession,
+    _user_id: ReqData<UserId>,
     flash_messages: IncomingFlashMessages,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if session.get_user_id().map_err(e500)?.is_none() {
-        return Ok(see_other("/login"));
-    }
     let mut error_msg = String::new();
     for m in flash_messages.iter() {
         error_msg.push_str(m.content());
