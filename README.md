@@ -5,7 +5,6 @@ Following the zero2prod book using rocket.
 TODO:
 - Chapter 7 exercises.
 - Chapter 10:  
-  - Add a Send a newsletter issue link to the admin dashboard;
   - Add an HTML form at GET /admin/newsletters to submit a new issue;
   - Adapt POST /newsletters to process the form data:
     - Change the route to POST /admin/newsletters;
