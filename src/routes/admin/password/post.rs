@@ -28,6 +28,10 @@ pub async fn change_password(
         .send();
         return Ok(see_other("/admin/password"));
     }
+    if !(12..=128).contains(&form.new_password.expose_secret().len()) {
+        FlashMessage::error("New password should have between 12 and 128 characters.").send();
+        return Ok(see_other("/admin/password"));
+    }
     let username = get_username(user_id.0, &pool).await.map_err(e500)?;
     let credentials = Credentials {
         username,

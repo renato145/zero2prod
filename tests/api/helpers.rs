@@ -139,6 +139,14 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn do_login(&self) -> reqwest::Response {
+        self.post_login(&serde_json::json!({
+            "username": &self.test_user.username,
+            "password": &self.test_user.password,
+        }))
+        .await
+    }
+
     pub async fn get_admin_dashboard(&self) -> reqwest::Response {
         self.api_client
             .get(format!("{}/admin/dashboard", &self.address))
