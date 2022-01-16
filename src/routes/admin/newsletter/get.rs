@@ -2,9 +2,7 @@ use crate::routes::TEMPLATES;
 use actix_web::{http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
 
-pub async fn change_password_form(
-    flash_messages: IncomingFlashMessages,
-) -> Result<HttpResponse, actix_web::Error> {
+pub async fn publish_newsletter_form(flash_messages: IncomingFlashMessages) -> HttpResponse {
     let mut error_msg = String::new();
     for m in flash_messages.iter() {
         error_msg.push_str(m.content());
@@ -13,9 +11,9 @@ pub async fn change_password_form(
     let html_body = {
         let mut context = tera::Context::new();
         context.insert("error_msg", &error_msg);
-        TEMPLATES.render("password.html", &context).unwrap()
+        TEMPLATES.render("newsletters.html", &context).unwrap()
     };
-    Ok(HttpResponse::Ok()
+    HttpResponse::Ok()
         .content_type(ContentType::html())
-        .body(html_body))
+        .body(html_body)
 }

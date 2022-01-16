@@ -63,7 +63,7 @@ pub async fn login(
     }
 }
 
-// Redirect to the login page with an error message.
+/// Redirect to the login page with an error message.
 fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     FlashMessage::error(e.to_string()).send();
     InternalError::from_response(e, see_other("/login"))
