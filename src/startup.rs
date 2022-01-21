@@ -117,6 +117,7 @@ pub async fn run(
                     .route("/newsletters", web::get().to(publish_newsletter_form))
                     .route("/newsletters", web::post().to(publish_newsletter)),
             )
+            .service(actix_files::Files::new("/static", "./static"))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
