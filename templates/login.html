@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock title %}
 {% block content %}
-  {% if error_msg %}
-    <p><i>{{error_msg}}</i></p>
-  {% endif %}
-  <form action="/login" method="post">
-    <label>
-      Username
-      <input type="text" placeholder="Enter Username" name="username" />
-    </label>
-    <label
-      >Password
-      <input type="password" placeholder="Enter Password" name="password"
-    /></label>
-    <button type="submit">Login</button>
-  </form>
+  <div class="max-w-md mx-auto">
+    {% if error_msg %}
+      <div class="mb-2 p-2 bg-red-200 text-sm break-words">
+        <p><i>{{error_msg}}</i></p>
+      </div>
+    {% endif %}
+    <form class="grid grid-cols-1 gap-6" action="/login" method="post">
+      <label>
+        <span class="text-gray-700">Username</span>
+        <input class="w-full rounded" type="text" placeholder="Enter Username" name="username" />
+      </label>
+      <label>
+        <span class="text-gray-700">Password</span>
+        <input class="w-full rounded" type="password" placeholder="Enter Password" name="password"
+      /></label>
+      <button type="submit">Login</button>
+    </form>
+  </div>
 {% endblock content %}

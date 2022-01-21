@@ -1,36 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Publish Newsletter Issue{% endblock title %}
 {% block content %}
-  {% if error_msg %}
-    <p><i>{{error_msg}}</i></p>
-  {% endif %}
-  <form action="/admin/newsletters" method="post">
-    <label
-      >Title:<br />
-      <input type="text" placeholder="Enter the issue title" name="title"
-    /></label>
-    <br />
-    <label
-      >Plain text content:<br />
-      <textarea
-        placeholder="Enter the content in plain text"
-        name="text_content"
-        rows="20"
-        cols="50"
-      ></textarea>
-    </label>
-    <br />
-    <label
-      >HTML content:<br />
-      <textarea
-        placeholder="Enter the content in HTML format"
-        name="html_content"
-        rows="20"
-        cols="50"
-      ></textarea>
-    </label>
-    <br />
-    <button type="submit">Publish</button>
-  </form>
-  <p><a href="/admin/dashboard">&lt;- Back</a></p>
+  <div class="container max-w-2xl mx-auto">
+    {% if error_msg %}
+      <div class="mb-2 p-2 bg-red-200 text-sm break-words">
+        <p><i>{{error_msg}}</i></p>
+      </div>
+    {% endif %}
+    <form class="grid grid-cols-1 gap-6" action="/admin/newsletters" method="post">
+      <label>
+        <span class="text-gray-700">Title</span>
+        <input class="w-full rounded" type="text" placeholder="Enter the issue title" name="title" />
+      </label>
+      <label>
+        <span class="text-gray-700">Plain text content</span>
+        <textarea
+          class="w-full rounded"
+          placeholder="Enter the content in plain text"
+          name="text_content"
+          rows="20"
+          cols="50"
+        ></textarea>
+      </label>
+      <label>
+        <span class="text-gray-700">HTML content</span>
+        <textarea
+          class="w-full rounded"
+          placeholder="Enter the content in HTML format"
+          name="html_content"
+          rows="20"
+          cols="50"
+        ></textarea>
+      </label>
+      <button type="submit">Publish</button>
+    </form>
+    <p><a href="/admin/dashboard">&lt;- Back</a></p>
+  </div>
 {% endblock content %}

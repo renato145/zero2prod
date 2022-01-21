@@ -8,11 +8,17 @@
     {% endblock head %}
 </head>
 <body>
-    <div id="content">{% block content %}{% endblock content %}</div>
-    <div id="footer">
+    <div class="container flex flex-col mx-auto min-h-screen">
+        <main class="grow mt-4">
+            {% block content %}{% endblock content %}
+        </main>
         {% block footer %}
-		<hr />
-        <p>Some footer here</p>
+        <footer class="my-4 w-full">
+            <hr />
+            <div class="mt-2 flex flex-wrap flex-col items-center justify-center">
+                <p class="text-sm text-gray-600">Some footer here</p>
+            </div>
+        </footer>
         {% endblock footer %}
     </div>
 </body>

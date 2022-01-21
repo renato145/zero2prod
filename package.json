@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "tailwindcss": "^3.0.15"
+  },
+  "scripts": {
+    "start": "tailwindcss -i ./templates/style.css -o ./static/style.css --watch",
+    "build": "NODE_ENV=production tailwindcss -i ./templates/style.css -o ./static/style.css --minify"
+  },
+  "dependencies": {
+    "@tailwindcss/forms": "^0.4.0"
+  }
+}
