@@ -23,7 +23,7 @@ impl FromRequest for UserId {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        if let Some(id) = req.req_data().get::<Self>() {
+        if let Some(id) = req.extensions().get::<Self>() {
             ok(id.clone())
         } else {
             err(ErrorInternalServerError(
