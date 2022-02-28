@@ -241,6 +241,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-web-lab"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e11453a8c4dbc04628d27dfed4819743239a1dadbe957fb4bcf2c2610538aa9"
+dependencies = [
+ "actix-files",
+ "actix-http",
+ "actix-router",
+ "actix-service",
+ "actix-utils",
+ "actix-web",
+ "ahash",
+ "bytes",
+ "csv",
+ "derive_more",
+ "digest 0.10.1",
+ "futures-core",
+ "futures-util",
+ "hmac 0.12.0",
+ "local-channel",
+ "log",
+ "matchit",
+ "mime",
+ "once_cell",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "tokio",
+]
+
+[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -496,7 +528,10 @@ version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
 dependencies = [
+ "lazy_static",
  "memchr",
+ "regex-automata",
+ "serde",
 ]
 
 [[package]]
@@ -807,6 +842,28 @@ checksum = "b1d1a86f49236c215f271d40892d5fc950490551400b02ef360692c29815c714"
 dependencies = [
  "generic-array 0.14.5",
  "subtle",
+]
+
+[[package]]
+name = "csv"
+version = "1.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22813a6dc45b335f9bade10bf7271dc477e81113e89eb251a0bc2a8a81c536e1"
+dependencies = [
+ "bstr",
+ "csv-core",
+ "itoa 0.4.8",
+ "ryu",
+ "serde",
+]
+
+[[package]]
+name = "csv-core"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b2466559f260f48ad25fe6317b3c8dac77b5bdb5763ac7d9d6103530663bc90"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -1626,6 +1683,12 @@ name = "matches"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
+
+[[package]]
+name = "matchit"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9376a4f0340565ad675d11fc1419227faf5f60cd7ac9cb2e7185a471f30af833"
 
 [[package]]
 name = "md-5"
@@ -3665,6 +3728,7 @@ dependencies = [
  "actix-session",
  "actix-web",
  "actix-web-flash-messages",
+ "actix-web-lab",
  "anyhow",
  "argon2",
  "base64",
