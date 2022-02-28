@@ -1,15 +1,16 @@
-use super::middleware::UserId;
-use crate::{routes::TEMPLATES, utils::e500};
+use crate::{authentication::UserId, routes::TEMPLATES, utils::e500};
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use anyhow::{Context, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub async fn admin_dashboard(
-    user_id: UserId,
+    user_id: web::ReqData<UserId>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let username = get_username(user_id.0, &pool).await.map_err(e500)?;
+    let username = get_username(*user_id.into_inner(), &pool)
+        .await
+        .map_err(e500)?;
     let html_body = {
         let mut context = tera::Context::new();
         context.insert("username", &username);

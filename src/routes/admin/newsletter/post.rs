@@ -1,7 +1,7 @@
 use crate::{
+    authentication::UserId,
     domain::SubscriberEmail,
     email_client::EmailClient,
-    routes::admin::middleware::UserId,
     utils::{e500, see_other},
 };
 use actix_web::{web, HttpResponse};
@@ -18,13 +18,17 @@ pub struct FormData {
     html_content: String,
 }
 
+#[tracing::instrument(
+    name = "Publish a newsletter issue",
+    skip(form, pool, email_client, user_id),
+    fields(user_id=%*user_id)
+)]
 pub async fn publish_newsletter(
-    user_id: UserId,
+    user_id: web::ReqData<UserId>,
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    tracing::Span::current().record("user_id", &tracing::field::display(&user_id.0));
     let subscribers = get_confirmed_subscribers(&pool).await.map_err(e500)?;
     for subscriber in subscribers {
         match subscriber {

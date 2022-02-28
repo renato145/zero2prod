@@ -1,10 +1,10 @@
 use crate::{
+    authentication::reject_anonymous_users,
     configuration::{DatabaseSettings, Settings},
     email_client::EmailClient,
     routes::{
         admin_dashboard, change_password, change_password_form, confirm, health_check_route, home,
         log_out, login, login_form, publish_newsletter, publish_newsletter_form, subscribe,
-        CheckLogin,
     },
 };
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
@@ -15,6 +15,7 @@ use actix_web::{
     App, HttpServer,
 };
 use actix_web_flash_messages::{storage::CookieMessageStore, FlashMessagesFramework};
+use actix_web_lab::middleware::from_fn;
 use anyhow::Result;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -109,7 +110,7 @@ pub async fn run(
             .route("/subscriptions/confirm", web::get().to(confirm))
             .service(
                 web::scope("/admin")
-                    .wrap(CheckLogin)
+                    .wrap(from_fn(reject_anonymous_users))
                     .route("/dashboard", web::get().to(admin_dashboard))
                     .route("/password", web::get().to(change_password_form))
                     .route("/password", web::post().to(change_password))
