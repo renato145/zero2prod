@@ -64,8 +64,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
-    let response = app.get_publish_newsletters().await;
-    let html_page = response.text().await.unwrap();
+    let html_page = app.get_publish_newsletter_html().await;
     assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 }
 
@@ -93,8 +92,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
-    let response = app.get_publish_newsletters().await;
-    let html_page = response.text().await.unwrap();
+    let html_page = app.get_publish_newsletter_html().await;
     assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 }
 

@@ -117,6 +117,10 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_publish_newsletter_html(&self) -> String {
+        self.get_publish_newsletters().await.text().await.unwrap()
+    }
+
     pub async fn post_publish_newsletters<Body>(&self, body: &Body) -> reqwest::Response
     where
         Body: Serialize,
