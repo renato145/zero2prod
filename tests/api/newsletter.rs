@@ -129,7 +129,7 @@ async fn you_must_be_logged_in_to_publish_a_newsletter() {
 async fn newsletter_creation_is_idempotent() {
     // Arrange
     let app = spawn_app().await;
-    create_unconfirmed_subscriber(&app).await;
+    create_confirmed_subscriber(&app).await;
     app.do_login().await;
 
     Mock::given(path("/email"))
@@ -139,17 +139,27 @@ async fn newsletter_creation_is_idempotent() {
         .mount(&app.email_server)
         .await;
 
-    // Act - Submit newsletter form
+    // Act - Part 1 - Submit newsletter form
     let newsletter_request_body = serde_json::json!({
         "title": "Newsletter title",
         "text_content": "Newsletter body as plain text",
         "html_content": "<p>Newsletter body as HTML</p>",
         // We expect the idempotency key as part of the
         // form data, not as an header
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
+        // "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_publish_newsletters(&newsletter_request_body).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
 
-    // Assert
+    // Act - Part 2 - Follow the redirect
+    let html_page = app.get_publish_newsletter_html().await;
+    assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
+
+    // Act - Part 3 - Submit newsletter form **again**
+    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to(&response, "/admin/newsletters");
+
+    // Act - Part 4 - Follow the redirect
+    let html_page = app.get_publish_newsletter_html().await;
+    assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 }
