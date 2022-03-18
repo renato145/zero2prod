@@ -1,4 +1,4 @@
-use crate::helpers::{spawn_app, ConfirmationLinks, TestApp};
+use crate::helpers::{assert_is_redirect_to, spawn_app, ConfirmationLinks, TestApp};
 use wiremock::{
     matchers::{any, method, path},
     Mock, ResponseTemplate,
@@ -61,11 +61,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         "html_content": "<p>Newsletter body as HTML</p>",
     });
     let response = app.post_publish_newsletters(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(
-        response.headers().get("Location").unwrap(),
-        "/admin/newsletters"
-    );
+    assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
     let response = app.get_publish_newsletters().await;
@@ -94,11 +90,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         "html_content": "<p>Newsletter body as HTML</p>",
     });
     let response = app.post_publish_newsletters(&newsletter_request_body).await;
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(
-        response.headers().get("Location").unwrap(),
-        "/admin/newsletters"
-    );
+    assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
     let response = app.get_publish_newsletters().await;
@@ -115,8 +107,7 @@ async fn you_must_be_logged_in_to_see_the_newsletter_form() {
     let response = app.get_publish_newsletters().await;
 
     // Assert
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(response.headers().get("Location").unwrap(), "/login");
+    assert_is_redirect_to(&response, "/login");
 }
 
 #[tokio::test]
@@ -133,6 +124,34 @@ async fn you_must_be_logged_in_to_publish_a_newsletter() {
     let response = app.post_publish_newsletters(&newsletter_request_body).await;
 
     // Assert
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(response.headers().get("Location").unwrap(), "/login");
+    assert_is_redirect_to(&response, "/login");
+}
+
+#[tokio::test]
+async fn newsletter_creation_is_idempotent() {
+    // Arrange
+    let app = spawn_app().await;
+    create_unconfirmed_subscriber(&app).await;
+    app.do_login().await;
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act - Submit newsletter form
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        // We expect the idempotency key as part of the
+        // form data, not as an header
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    assert_is_redirect_to(&response, "/admin/newsletters");
+
+    // Assert
 }

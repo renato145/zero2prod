@@ -1,4 +1,4 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{assert_is_redirect_to, spawn_app};
 
 #[tokio::test]
 async fn you_must_be_logged_in_to_access_the_admin_dashboard() {
@@ -9,8 +9,7 @@ async fn you_must_be_logged_in_to_access_the_admin_dashboard() {
     let response = app.get_admin_dashboard().await;
 
     // Assert
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(response.headers().get("Location").unwrap(), "/login");
+    assert_is_redirect_to(&response, "/login");
 }
 
 #[tokio::test]
@@ -28,8 +27,7 @@ async fn logout_clears_session_state() {
 
     // Act - Logout
     let response = app.post_logout().await;
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(response.headers().get("Location").unwrap(), "/login");
+    assert_is_redirect_to(&response, "/login");
 
     // Act - Follow the redirect
     let response = app.get_login().await;
@@ -38,6 +36,5 @@ async fn logout_clears_session_state() {
 
     // Act - Attempt to load admin panel
     let response = app.get_admin_dashboard().await;
-    assert_eq!(response.status().as_u16(), 303);
-    assert_eq!(response.headers().get("Location").unwrap(), "/login");
+    assert_is_redirect_to(&response, "/login");
 }
