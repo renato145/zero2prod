@@ -1,4 +1,5 @@
 use crate::domain::SubscriberEmail;
+use anyhow::Context;
 use reqwest::{Client, Url};
 use std::time::Duration;
 
@@ -15,13 +16,13 @@ impl EmailClient {
         sender: SubscriberEmail,
         authorization_token: String,
         timeout: Duration,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, anyhow::Error> {
         let base_url = match base_url.as_str() {
             "localhost" => "http://localhost".to_string(),
             _ => base_url,
         };
-        let base_url =
-            Url::parse(&base_url).map_err(|_| format!("Failed to parse url {:?}.", base_url))?;
+        let base_url = Url::parse(&base_url)
+            .with_context(|| format!("Failed to parse url {:?}.", base_url))?;
         let http_client = Client::builder().timeout(timeout).build().unwrap();
 
         Ok(Self {

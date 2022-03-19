@@ -1,4 +1,4 @@
-use crate::domain::SubscriberEmail;
+use crate::{domain::SubscriberEmail, email_client::EmailClient};
 use config::Config;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -35,6 +35,17 @@ impl EmailClientSettings {
 
     pub fn timeout(&self) -> Duration {
         Duration::from_millis(self.timeout_milliseconds)
+    }
+
+    pub fn client(self) -> Result<EmailClient, anyhow::Error> {
+        let sender_email = self.sender().expect("Invalid sender email address.");
+        let timeout = self.timeout();
+        EmailClient::new(
+            self.base_url,
+            sender_email,
+            self.authorization_token,
+            timeout,
+        )
     }
 }
 
