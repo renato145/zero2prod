@@ -5,9 +5,6 @@ Following the zero2prod book using rocket.
 TODO:
 - Chapter 7:
   - What happens if a user clicks on a confirmation link twice?
-  - What happens if the subscription token is well-formatted but non-existent?
-  - Add validation on the incoming token, we are currently passing the raw user input straight into a
-    query (thanks sqlx for protecting us from SQL injections <3);
 - Chapter 11:
   - GET /admin/newsletters: redirect the user back to the form page with a proper error message when body
     validation fails (page 444).
