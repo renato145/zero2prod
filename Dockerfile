@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.57.0 as chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.59.0 as chef
 WORKDIR /app
 # Install linker deps
 RUN apt update && apt install lld clang -y
@@ -23,7 +23,7 @@ FROM debian:bullseye-slim AS runtime
 WORKDIR /app
 # Install OpenSSL - it is dynamically linked by some of our dependencies
 RUN apt-get update -y \
-	&& apt-get install -y --no-install-recommends openssl \
+	&& apt-get install -y --no-install-recommends openssl ca-certificates \
 	# Clean up
 	&& apt-get autoremove -y \
 	&& apt-get clean -y \
