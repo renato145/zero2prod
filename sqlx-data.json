@@ -1,152 +1,247 @@
 {
   "db": "PostgreSQL",
   "2880480077b654e38b63f423ab40680697a500ffe1af1d1b39108910594b581b": {
-    "query": "\n        UPDATE users\n        SET password_hash = $1\n        WHERE user_id = $2\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Text",
           "Uuid"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        UPDATE users\n        SET password_hash = $1\n        WHERE user_id = $2\n        "
   },
   "33b11051e779866db9aeb86d28a59db07a94323ffdc59a5a2c1da694ebe9a65f": {
-    "query": "\n        SELECT username\n        FROM users\n        WHERE user_id = $1\n        ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "username",
+          "ordinal": 0,
           "type_info": "Text"
         }
       ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Left": [
           "Uuid"
         ]
-      },
-      "nullable": [
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        SELECT username\n        FROM users\n        WHERE user_id = $1\n        "
   },
   "342d24b0e4ba0ad3eb55cbe0a6fe85bdcc5a842f95cb4f5e23488ac2c0c56ef1": {
-    "query": "\n        SELECT id\n        FROM subscriptions\n        wHERE email = $1 AND name = $2 AND status = 'pending_confirmation'\n        ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Uuid"
         }
+      ],
+      "nullable": [
+        false
       ],
       "parameters": {
         "Left": [
           "Text",
           "Text"
         ]
-      },
-      "nullable": [
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        SELECT id\n        FROM subscriptions\n        wHERE email = $1 AND name = $2 AND status = 'pending_confirmation'\n        "
   },
-  "9ca563dbb06bcd0041ceff538c654dec2441ea0959fa67d4d7bcfeffad442654": {
-    "query": "INSERT INTO subscription_tokens (subscription_token, subscriber_id)\n        VALUES ($1, $2)",
+  "806427a627b8e503fe6e9e8e0f46ab133f391159e9df39d2a3c4a396525143ea": {
+    "describe": {
+      "columns": [
+        {
+          "name": "response_status_code",
+          "ordinal": 0,
+          "type_info": "Int2"
+        },
+        {
+          "name": "response_headers: Vec<HeaderPairRecord>",
+          "ordinal": 1,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Array": {
+                  "Custom": {
+                    "kind": {
+                      "Composite": [
+                        [
+                          "name",
+                          "Text"
+                        ],
+                        [
+                          "value",
+                          "Bytea"
+                        ]
+                      ]
+                    },
+                    "name": "header_pair"
+                  }
+                }
+              },
+              "name": "_header_pair"
+            }
+          }
+        },
+        {
+          "name": "response_body",
+          "ordinal": 2,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n\t\tSELECT\n\t\t\tresponse_status_code,\n\t\t\tresponse_headers as \"response_headers: Vec<HeaderPairRecord>\",\n\t\t\tresponse_body\n\t\tFROM idempotency\n\t\tWHERE user_id = $1 AND idempotency_key = $2\n\t\t"
+  },
+  "8b64519959caf454a9a123298aada173c56fd15955a6039e508a1449ab349f18": {
     "describe": {
       "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Int2",
+          {
+            "Custom": {
+              "kind": {
+                "Array": {
+                  "Custom": {
+                    "kind": {
+                      "Composite": [
+                        [
+                          "name",
+                          "Text"
+                        ],
+                        [
+                          "value",
+                          "Bytea"
+                        ]
+                      ]
+                    },
+                    "name": "header_pair"
+                  }
+                }
+              },
+              "name": "_header_pair"
+            }
+          },
+          "Bytea"
+        ]
+      }
+    },
+    "query": "\n\t\tINSERT INTO idempotency (\n\t\t\tuser_id,\n\t\t\tidempotency_key,\n\t\t\tresponse_status_code,\n\t\t\tresponse_headers,\n\t\t\tresponse_body,\n\t\t\tcreated_at\n\t\t)\n\t\tVALUES ($1, $2, $3, $4, $5, now())\n\t\t"
+  },
+  "9ca563dbb06bcd0041ceff538c654dec2441ea0959fa67d4d7bcfeffad442654": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Text",
           "Uuid"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO subscription_tokens (subscription_token, subscriber_id)\n        VALUES ($1, $2)"
   },
   "ad120337ee606be7b8d87238e2bb765d0da8ee61b1a3bc142414c4305ec5e17f": {
-    "query": "SELECT subscriber_id FROM subscription_tokens WHERE subscription_token = $1",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "subscriber_id",
+          "ordinal": 0,
           "type_info": "Uuid"
         }
+      ],
+      "nullable": [
+        false
       ],
       "parameters": {
         "Left": [
           "Text"
         ]
-      },
-      "nullable": [
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT subscriber_id FROM subscription_tokens WHERE subscription_token = $1"
   },
   "b6dcf33213a03907d67628e7be2111612ce01dbafeb43e073aeb1f860c2f6372": {
-    "query": "\n        SELECT user_id, password_hash\n        FROM users\n\t\tWHERE username = $1\n        ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "user_id",
+          "ordinal": 0,
           "type_info": "Uuid"
         },
         {
-          "ordinal": 1,
           "name": "password_hash",
+          "ordinal": 1,
           "type_info": "Text"
         }
+      ],
+      "nullable": [
+        false,
+        false
       ],
       "parameters": {
         "Left": [
           "Text"
         ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        SELECT user_id, password_hash\n        FROM users\n\t\tWHERE username = $1\n        "
   },
   "dc03fd631c41d559c878ee52239708b9500f6430b9efcce086c151d097ffd633": {
-    "query": "\n\t\tSELECT email\n\t\tFROM subscriptions\n\t\tWHERE status = 'confirmed'\n\t\t",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "email",
+          "ordinal": 0,
           "type_info": "Text"
         }
       ],
-      "parameters": {
-        "Left": []
-      },
       "nullable": [
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n\t\tSELECT email\n\t\tFROM subscriptions\n\t\tWHERE status = 'confirmed'\n\t\t"
   },
   "e4b72d85b9cf47e44492338b9e512930f84396fa66d718f6e66a525199058333": {
-    "query": "\n        UPDATE subscriptions\n        SET status = 'confirmed'\n        WHERE id = $1 AND status = 'pending_confirmation'",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Uuid"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        UPDATE subscriptions\n        SET status = 'confirmed'\n        WHERE id = $1 AND status = 'pending_confirmation'"
   },
   "e6822c9e162eabc20338cc27d51a8e80578803ec1589c234d93c3919d14a96a6": {
-    "query": "\n        INSERT INTO subscriptions (id, email, name, subscribed_at, status)\n        VALUES ($1, $2, $3, $4, 'pending_confirmation')\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Uuid",
@@ -154,8 +249,8 @@
           "Text",
           "Timestamptz"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        INSERT INTO subscriptions (id, email, name, subscribed_at, status)\n        VALUES ($1, $2, $3, $4, 'pending_confirmation')\n        "
   }
 }
