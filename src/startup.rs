@@ -3,9 +3,9 @@ use crate::{
     configuration::{DatabaseSettings, Settings},
     email_client::EmailClient,
     routes::{
-        admin_dashboard, change_password, change_password_form, confirm, health_check_route, home,
-        log_out, login, login_form, publish_newsletter, publish_newsletter_form, subscribe,
-        subscriptions_form,
+        admin_dashboard, change_password, change_password_form, confirm, delivery_process,
+        health_check_route, home, log_out, login, login_form, publish_newsletter,
+        publish_newsletter_form, subscribe, subscriptions_form,
     },
 };
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
@@ -108,7 +108,8 @@ pub async fn run(
                     .route("/password", web::post().to(change_password))
                     .route("/logout", web::post().to(log_out))
                     .route("/newsletters", web::get().to(publish_newsletter_form))
-                    .route("/newsletters", web::post().to(publish_newsletter)),
+                    .route("/newsletters", web::post().to(publish_newsletter))
+                    .route("/delivery_process", web::get().to(delivery_process)),
             )
             .service(actix_files::Files::new("/static", "./static"))
             .app_data(db_pool.clone())

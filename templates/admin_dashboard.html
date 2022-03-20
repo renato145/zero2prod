@@ -1,15 +1,18 @@
 {% extends "base.html" %} {% block title %}Admin dashboard{% endblock title %}
 {% block content %}
-<p class="text-2xl font-medium">Welcome {{username}}!</p>
-<p class="mt-4 text-lg">Available actions:</p>
-<ul class="list-inside list-disc">
-  <li><a href="/admin/password">Change password</a></li>
-  <li><a href="/admin/newsletters">Publish a newsletter issue</a></li>
-  <li>
-    <a href="javascript:document.logoutForm.submit()">Logout</a>
-    <form name="logoutForm" action="/admin/logout" method="post" hidden>
-      <input hidden type="submit" value="Logout" />
-    </form>
-  </li>
-</ul>
+<div class="container mx-auto max-w-2xl">
+  <p class="text-2xl font-medium">Welcome {{username}}!</p>
+  <p class="mt-4 text-lg">Available actions:</p>
+  <ul class="list-inside list-disc">
+    <li><a href="/admin/password">Change password</a></li>
+    <li><a href="/admin/newsletters">Publish a newsletter issue</a></li>
+    <li><a href="/admin/delivery_process">Check the delivery queue</a></li>
+    <li>
+      <a href="javascript:document.logoutForm.submit()">Logout</a>
+      <form name="logoutForm" action="/admin/logout" method="post" hidden>
+        <input hidden type="submit" value="Logout" />
+      </form>
+    </li>
+  </ul>
+</div>
 {% endblock content %}
