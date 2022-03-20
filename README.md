@@ -5,8 +5,6 @@ Following the zero2prod book using rocket.
 TODO:
 - 404 page.
 - Chapter 11:
-  - GET /admin/newsletters: redirect the user back to the form page with a proper error message when body
-    validation fails (page 444).
   - Delivery process (a page to track how many emails are still) outstanding for a certain newsletter
     issue (page 474).
   - Retry when the delivery attempt fails due to a Postmark error. Enhance issue_delivery_queue e.g. adding
