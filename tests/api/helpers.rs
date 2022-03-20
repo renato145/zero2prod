@@ -95,7 +95,7 @@ impl TestApp {
 
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
         self.api_client
-            .post(format!("{}/subscriptions", &self.address))
+            .post(format!("{}/subscribe", &self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
             .send()
