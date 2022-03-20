@@ -3,6 +3,7 @@
 Following the zero2prod book using rocket.
 
 TODO:
+- 404 page.
 - Chapter 7:
   - What happens if a user clicks on a confirmation link twice?
 - Chapter 11:
