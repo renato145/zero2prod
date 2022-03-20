@@ -14,6 +14,9 @@ impl FromStr for SubscriberEmail {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.trim().is_empty() {
+            return Err("Subscriber email can't be empty.".to_string());
+        }
         if validate_email(s) {
             Ok(Self(s.to_owned()))
         } else {

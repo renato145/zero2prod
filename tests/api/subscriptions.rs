@@ -135,24 +135,24 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
+async fn subscribe_fails_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
         (
             "name=&email=ursula_le_guin%40gmail.com",
             "empty name",
-            "is not a valid subscriber name.",
+            "Subscriber name can't be empty.",
         ),
         (
             "name=Ursula&email=",
             "empty email",
-            "is not a valid subscriber email.",
+            "Subscriber email can't be empty.",
         ),
         (
             "name=Ursula&email=definitely-not-an-email",
             "invalid email",
-            "is not a valid subscriber email.",
+            "definitely-not-an-email is not a valid subscriber email.",
         ),
     ];
     for (body, description, expected) in test_cases {
