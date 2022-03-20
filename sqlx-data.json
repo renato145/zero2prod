@@ -24,6 +24,24 @@
     },
     "query": "\n\t\tSELECT newsletter_issue_id, subscriber_email\n\t\tFROM issue_delivery_queue\n\t\tFOR UPDATE\n\t\tSKIP LOCKED\n\t\tLIMIT 1\n\t\t"
   },
+  "1fbe5b27d417e275cd611a19c4c25a5c47f720a9872a00d4e85b7cb9328e80ca": {
+    "describe": {
+      "columns": [
+        {
+          "name": "n!",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n\t\tSELECT count(newsletter_issue_id) as \"n!\"\n\t\tFROM issue_delivery_queue\n\t\t"
+  },
   "2880480077b654e38b63f423ab40680697a500ffe1af1d1b39108910594b581b": {
     "describe": {
       "columns": [],
