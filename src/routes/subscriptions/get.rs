@@ -1,7 +1,7 @@
-use super::{error_chain_fmt, TEMPLATES};
 use crate::{
     domain::{NewSubscriber, SubscriptionToken},
     email_client::EmailClient,
+    routes::{error_chain_fmt, TEMPLATES},
     ApplicationBaseUrl,
 };
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
