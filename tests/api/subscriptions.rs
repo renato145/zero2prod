@@ -1,11 +1,11 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{assert_is_redirect_to, spawn_app};
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
 };
 
 #[tokio::test]
-async fn subscribe_returns_200_for_valid_form_data() {
+async fn subscribe_returns_correct_message_for_valid_form_data() {
     // Arrange
     let app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
@@ -19,9 +19,15 @@ async fn subscribe_returns_200_for_valid_form_data() {
 
     // Act
     let response = app.post_subscriptions(body.into()).await;
+    assert_is_redirect_to(&response, "/subscriptions");
 
     // Assert
-    assert_eq!(200, response.status().as_u16());
+    let html_page = app.get_subscriptions_html().await;
+    assert!(
+        html_page.contains("A confirmation email was sent to ursula_le_guin@gmail.com"),
+        "Current page: {}",
+        html_page
+    );
 }
 
 #[tokio::test]
@@ -114,13 +120,16 @@ async fn subscribe_returns_client_error_when_data_is_missing() {
     for (invalid_body, error_message) in test_cases {
         // Act
         let response = app.post_subscriptions(invalid_body.into()).await;
+        assert_is_redirect_to(&response, "/subscriptions");
 
         // Assert
-        assert_eq!(
-            400,
-            response.status().as_u16(),
-            "The API did not fail with Client Error when the payload was {}.",
-            error_message
+        let html_page = app.get_subscriptions_html().await;
+        assert!(
+            html_page.contains("Parse error: missing field"),
+            "The API did not fail with Client Error when the payload was {}.\n\
+             Current page: {}",
+            error_message,
+            html_page
         );
     }
 }
@@ -130,21 +139,35 @@ async fn subscribe_returns_400_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
     let test_cases = vec![
-        ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
-        ("name=Ursula&email=", "empty email"),
-        ("name=Ursula&email=definitely-not-an-email", "invalid email"),
+        (
+            "name=&email=ursula_le_guin%40gmail.com",
+            "empty name",
+            "is not a valid subscriber name.",
+        ),
+        (
+            "name=Ursula&email=",
+            "empty email",
+            "is not a valid subscriber email.",
+        ),
+        (
+            "name=Ursula&email=definitely-not-an-email",
+            "invalid email",
+            "is not a valid subscriber email.",
+        ),
     ];
-
-    for (body, description) in test_cases {
+    for (body, description, expected) in test_cases {
         // Act
         let response = app.post_subscriptions(body.into()).await;
+        assert_is_redirect_to(&response, "/subscriptions");
 
         // Assert
-        assert_eq!(
-            400,
-            response.status().as_u16(),
-            "The API did not return 400 Bad Request when the payload was {}.",
-            description
+        let html_page = app.get_subscriptions_html().await;
+        assert!(
+            html_page.contains(expected),
+            "The API did not fail when the payload was {}.\n\
+             Current page: {}",
+            description,
+            html_page
         );
     }
 }
@@ -162,7 +185,13 @@ async fn subscribe_fail_if_there_is_a_fatal_database_error() {
 
     // Act
     let response = app.post_subscriptions(body.into()).await;
+    assert_is_redirect_to(&response, "/subscriptions");
 
     // Assert
-    assert_eq!(response.status().as_u16(), 500);
+    let html_page = app.get_subscriptions_html().await;
+    assert!(
+        html_page.contains("Something went wrong."),
+        "Current page: {}",
+        html_page
+    );
 }

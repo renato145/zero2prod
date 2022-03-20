@@ -93,6 +93,18 @@ impl TestApp {
         }
     }
 
+    pub async fn get_subscriptions(&self) -> reqwest::Response {
+        self.api_client
+            .get(format!("{}/subscriptions", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn get_subscriptions_html(&self) -> String {
+        self.get_subscriptions().await.text().await.unwrap()
+    }
+
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
         self.api_client
             .post(format!("{}/subscribe", &self.address))
