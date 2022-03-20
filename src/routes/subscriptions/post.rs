@@ -33,6 +33,11 @@ impl TryFrom<FormData> for NewSubscriber {
 pub enum SubscribeError {
     #[error("{0}")]
     ValidationError(String),
+    #[error("{msg} already exists, use another email.")]
+    DuplicatedEmail {
+        msg: String,
+        source: Box<dyn sqlx::error::DatabaseError>,
+    },
     #[error("Something went wrong.")]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -87,7 +92,6 @@ pub async fn subscribe(
         None => {
             let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
                 .await
-                .context("Failed to insert new subscriber in the database.")
                 .map_err(subscriptions_redirect)?;
             subscriber_id
         }
@@ -159,7 +163,7 @@ pub async fn check_existing_pending_subscriber(
 pub async fn insert_subscriber(
     transaction: &mut Transaction<'_, Postgres>,
     new_subscriber: &NewSubscriber,
-) -> Result<Uuid, sqlx::Error> {
+) -> Result<Uuid, SubscribeError> {
     let subscriber_id = Uuid::new_v4();
     sqlx::query!(
         r#"
@@ -172,7 +176,18 @@ pub async fn insert_subscriber(
         Utc::now()
     )
     .execute(transaction)
-    .await?;
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::Database(e) if e.to_string().contains("duplicate key value") => {
+            SubscribeError::DuplicatedEmail {
+                msg: new_subscriber.email.to_string(),
+                source: e,
+            }
+        }
+        e => anyhow::Error::from(e)
+            .context("Failed to insert new subscriber in the database.")
+            .into(),
+    })?;
     Ok(subscriber_id)
 }
 

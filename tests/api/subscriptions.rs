@@ -195,3 +195,35 @@ async fn subscribe_fail_if_there_is_a_fatal_database_error() {
         html_page
     );
 }
+
+#[tokio::test]
+async fn subscribe_fails_when_email_already_exists() {
+    // Arrange
+    let app = spawn_app().await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act
+    // Subscribe and confirm subscription
+    app.post_subscriptions(body.into()).await;
+    let email_request = &app.email_server.received_requests().await.unwrap()[0];
+    let confirmation_links = app.get_confirmation_links(email_request);
+    reqwest::get(confirmation_links.html).await.unwrap();
+
+    let response = app.post_subscriptions(body.into()).await;
+    assert_is_redirect_to(&response, "/subscriptions");
+
+    // Assert
+    let html_page = app.get_subscriptions_html().await;
+    assert!(
+        html_page.contains("ursula_le_guin@gmail.com already exists, use another email."),
+        "Current page: {}",
+        html_page
+    );
+}
