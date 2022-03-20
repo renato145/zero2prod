@@ -2,10 +2,10 @@ use crate::{
     domain::{NewSubscriber, SubscriptionToken},
     email_client::EmailClient,
     routes::{error_chain_fmt, TEMPLATES},
-    utils::{e500, see_other},
+    utils::see_other,
     ApplicationBaseUrl,
 };
-use actix_web::{web, HttpResponse};
+use actix_web::{error::InternalError, web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use chrono::Utc;
@@ -33,7 +33,7 @@ impl TryFrom<FormData> for NewSubscriber {
 pub enum SubscribeError {
     #[error("{0}")]
     ValidationError(String),
-    #[error(transparent)]
+    #[error("Something went wrong.")]
     UnexpectedError(#[from] anyhow::Error),
 }
 
@@ -42,15 +42,6 @@ impl std::fmt::Debug for SubscribeError {
         error_chain_fmt(self, f)
     }
 }
-
-// impl ResponseError for SubscribeError {
-//     fn status_code(&self) -> StatusCode {
-//         match self {
-//             SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
-//             SubscribeError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-//         }
-//     }
-// }
 
 impl From<String> for SubscribeError {
     fn from(e: String) -> Self {
@@ -67,46 +58,37 @@ impl From<String> for SubscribeError {
     )
 )]
 pub async fn subscribe(
-    form: Option<web::Form<FormData>>,
+    form: Result<web::Form<FormData>, actix_web::Error>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     base_url: web::Data<ApplicationBaseUrl>,
-) -> Result<HttpResponse, actix_web::Error> {
-    // actix_web::error::InternalError
+) -> Result<HttpResponse, InternalError<SubscribeError>> {
     let form = match form {
-        Some(f) => {
+        Ok(f) => {
             tracing::Span::current().record("subscriber_email", &tracing::field::display(&f.email));
             tracing::Span::current().record("subscriber_name", &tracing::field::display(&f.name));
-            f.0
+            Ok(f.0)
         }
-        None => {
-            FlashMessage::error("Fill the form.");
-            return Ok(see_other("/subscriptions"));
-        }
-    };
-    let new_subscriber = match form.try_into() {
-        Ok(s) => s,
-        Err(e) => {
-            FlashMessage::error(format!("Validation error: {}", e));
-            return Ok(see_other("/subscriptions"));
-        }
-    };
+        Err(e) => Err(e.to_string()),
+    }
+    .map_err(subscriptions_redirect)?;
+    let new_subscriber = form.try_into().map_err(subscriptions_redirect)?;
     let mut transaction = pool
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool.")
-        .map_err(e500)?;
+        .map_err(subscriptions_redirect)?;
     let subscriber_id = match check_existing_pending_subscriber(&mut transaction, &new_subscriber)
         .await
         .context("Failed to check if new subscriber is present in the database.")
-        .map_err(e500)?
+        .map_err(subscriptions_redirect)?
     {
         Some(id) => id,
         None => {
             let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
                 .await
                 .context("Failed to insert new subscriber in the database.")
-                .map_err(e500)?;
+                .map_err(subscriptions_redirect)?;
             subscriber_id
         }
     };
@@ -114,12 +96,12 @@ pub async fn subscribe(
     store_token(&mut transaction, subscriber_id, subscription_token.as_ref())
         .await
         .context("Failed to store the confirmation token for a new subscriber.")
-        .map_err(e500)?;
+        .map_err(subscriptions_redirect)?;
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new subscriber.")
-        .map_err(e500)?;
+        .map_err(subscriptions_redirect)?;
     let subscriber_email = new_subscriber.email.to_string();
     send_confirmation_email(
         &email_client,
@@ -128,7 +110,7 @@ pub async fn subscribe(
         subscription_token,
     )
     .await
-    .map_err(e500)?;
+    .map_err(subscriptions_redirect)?;
 
     FlashMessage::info(format!(
         "A confirmation email was sent to {}",
@@ -136,6 +118,16 @@ pub async fn subscribe(
     ))
     .send();
     Ok(see_other("/subscriptions"))
+}
+
+/// Redirect to the subscriptions page with an error message.
+#[tracing::instrument(fields(e=%e))]
+fn subscriptions_redirect(
+    e: impl Into<SubscribeError> + std::fmt::Display,
+) -> InternalError<SubscribeError> {
+    let e = e.into();
+    FlashMessage::error(e.to_string()).send();
+    InternalError::from_response(e, see_other("/subscriptions"))
 }
 
 #[tracing::instrument(
