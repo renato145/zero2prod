@@ -1,0 +1,47 @@
+{% extends "base.html" %} {% block title %}Subscribe to newsletter{% endblock
+title %} {% block content %}
+<div class="container mx-auto max-w-2xl">
+  {% if error_msg %}
+  <div class="mb-2 break-words bg-red-200 p-2 text-sm">
+    <p><i>{{error_msg}}</i></p>
+  </div>
+  {% endif %}
+  <form
+    class="grid grid-cols-1 gap-6"
+    action="/subscribe"
+    method="post"
+  >
+    <!-- <label>
+      <span class="text-gray-700">Title</span>
+      <input
+        class="w-full rounded"
+        type="text"
+        placeholder="Enter the issue title"
+        name="title"
+      />
+    </label> -->
+    <!-- <label>
+      <span class="text-gray-700">Plain text content</span>
+      <textarea
+        class="w-full rounded"
+        placeholder="Enter the content in plain text"
+        name="text_content"
+        rows="20"
+        cols="50"
+      ></textarea>
+    </label>
+    <label>
+      <span class="text-gray-700">HTML content</span>
+      <textarea
+        class="w-full rounded"
+        placeholder="Enter the content in HTML format"
+        name="html_content"
+        rows="20"
+        cols="50"
+      ></textarea>
+    </label> -->
+    <button type="submit">Publish</button>
+  </form>
+  <p><a href="/admin/dashboard">&lt;- Back</a></p>
+</div>
+{% endblock content %}

@@ -5,6 +5,7 @@ use crate::{
     routes::{
         admin_dashboard, change_password, change_password_form, confirm, health_check_route, home,
         log_out, login, login_form, publish_newsletter, publish_newsletter_form, subscribe,
+        subscriptions_form,
     },
 };
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
@@ -97,6 +98,7 @@ pub async fn run(
             .route("/login", web::post().to(login))
             .route("/health_check", web::get().to(health_check_route))
             .route("/subscribe", web::post().to(subscribe))
+            .route("/subscriptions", web::get().to(subscriptions_form))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .service(
                 web::scope("/admin")
