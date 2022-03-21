@@ -242,3 +242,35 @@ async fn concurrent_form_submission_is_handled_gracefully() {
     app.dispatch_all_pending_emails().await;
     // Mock verifies on Drop that we have sent the newsletter email **once**
 }
+
+#[tokio::test]
+async fn newsletters_deliver_retries_on_external_error() {
+    // Arrange
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.do_login().await;
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(500))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act - Submit newsletter
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    let body = response.text().await.unwrap();
+    dbg!(&body);
+    
+    // Assert
+    todo!("Check retry");
+//   - Retry when the delivery attempt fails due to a Postmark error. Enhance issue_delivery_queue e.g. adding
+//     a `n_retries` and `execute_after` columns to keep track of how many attempts have already taken place
+//     and how long we should wait before trying again (page 480).
+}
