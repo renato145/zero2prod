@@ -4,7 +4,7 @@ use crate::{
     email_client::EmailClient,
     routes::{
         admin_dashboard, change_password, change_password_form, confirm, delivery_process,
-        health_check_route, home, log_out, login, login_form, publish_newsletter,
+        health_check_route, home, log_out, login, login_form, not_found, publish_newsletter,
         publish_newsletter_form, subscribe, subscriptions_form,
     },
 };
@@ -112,6 +112,7 @@ pub async fn run(
                     .route("/delivery_process", web::get().to(delivery_process)),
             )
             .service(actix_files::Files::new("/static", "./static"))
+            .default_service(web::get().to(not_found))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
