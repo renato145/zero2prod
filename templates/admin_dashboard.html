@@ -7,12 +7,9 @@
     <li><a href="/admin/password">Change password</a></li>
     <li><a href="/admin/newsletters">Publish a newsletter issue</a></li>
     <li><a href="/admin/delivery_process">Check the delivery queue</a></li>
-    <li>
-      <a href="javascript:document.logoutForm.submit()">Logout</a>
-      <form name="logoutForm" action="/admin/logout" method="post" hidden>
-        <input hidden type="submit" value="Logout" />
-      </form>
-    </li>
   </ul>
+  <form class="mt-2" name="logoutForm" action="/admin/logout" method="post">
+    <button type="submit">Logout</button>
+  </form>
 </div>
 {% endblock content %}
