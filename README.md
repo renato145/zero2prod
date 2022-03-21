@@ -5,8 +5,6 @@ Following the zero2prod book using rocket.
 TODO:
 - 404 page.
 - Chapter 11:
-  - Delivery process (a page to track how many emails are still) outstanding for a certain newsletter
-    issue (page 474).
   - Retry when the delivery attempt fails due to a Postmark error. Enhance issue_delivery_queue e.g. adding
     a `n_retries` and `execute_after` columns to keep track of how many attempts have already taken place
     and how long we should wait before trying again (page 480).
