@@ -5,7 +5,7 @@ pub mod configuration;
 pub mod domain;
 pub mod email_client;
 pub mod idempotency;
-pub mod idempotency_key_expiration;
+pub mod idempotency_expiration_worker;
 pub mod issue_delivery_worker;
 pub mod routes;
 pub mod session_state;

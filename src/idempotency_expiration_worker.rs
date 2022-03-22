@@ -3,7 +3,7 @@ use crate::{
     get_connection_pool,
 };
 use anyhow::Context;
-use rand::{prelude::ThreadRng, Rng};
+use rand::Rng;
 use sqlx::{postgres::types::PgInterval, PgPool};
 use std::time::Duration;
 
@@ -15,7 +15,6 @@ pub async fn run_worker_until_stopped(configuration: Settings) -> Result<(), any
 }
 
 async fn worker_loop(pool: PgPool, settings: IdempotencySettings) -> Result<(), anyhow::Error> {
-    let mut rng = rand::thread_rng();
     let mut retries = 0;
     let frequency = settings.expiration_frequency_secs as f32;
     let expiration_interval = Duration::from_secs(settings.expiration_secs)
@@ -27,18 +26,19 @@ async fn worker_loop(pool: PgPool, settings: IdempotencySettings) -> Result<(), 
         if let Err(_) = try_execute_task(&pool, &expiration_interval).await {
             retries += 1;
             if retries < MAX_RETRIES {
-                tokio::time::sleep(Duration::from_secs_f32(add_jitter(10.0, &mut rng))).await;
+                tokio::time::sleep(Duration::from_secs_f32(add_jitter(10.0))).await;
                 continue;
             } else {
                 retries = 0;
             }
         }
-        tokio::time::sleep(Duration::from_secs_f32(add_jitter(frequency, &mut rng))).await;
+        tokio::time::sleep(Duration::from_secs_f32(add_jitter(frequency))).await;
     }
 }
 
 /// Adds a random jittering around `secs` of +/- 10%.
-fn add_jitter(secs: f32, rng: &mut ThreadRng) -> f32 {
+fn add_jitter(secs: f32) -> f32 {
+    let mut rng = rand::thread_rng();
     let x = secs * 0.1;
     let jitter = rng.gen_range(-x..=x);
     (secs + jitter).max(0.0)

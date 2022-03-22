@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use tokio::task::JoinError;
 use zero2prod::{
     configuration::get_configuration,
-    issue_delivery_worker::run_worker_until_stopped,
+    idempotency_expiration_worker, issue_delivery_worker,
     telemetry::{get_subscriber, init_subscriber},
     Application,
 };
@@ -16,11 +16,17 @@ async fn main() -> Result<()> {
     let configuration = get_configuration().expect("Failed to read configuration.");
     let application = Application::build(configuration.clone()).await?;
     let application_task = tokio::spawn(application.run_until_stopped());
-    let worker_task = tokio::spawn(run_worker_until_stopped(configuration));
+    let issue_delivery_worker_task = tokio::spawn(issue_delivery_worker::run_worker_until_stopped(
+        configuration.clone(),
+    ));
+    let idempotency_expiration_worker_task = tokio::spawn(
+        idempotency_expiration_worker::run_worker_until_stopped(configuration),
+    );
 
     tokio::select! {
         o = application_task => report_exit("API", o),
-        o = worker_task => report_exit("Background worker", o),
+        o = issue_delivery_worker_task => report_exit("Background worker (issue_delivery)", o),
+        o = idempotency_expiration_worker_task => report_exit("Background worker (idempotency_expiration)", o),
     }
 
     Ok(())

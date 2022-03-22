@@ -1,10 +1,9 @@
-use std::time::Duration;
-
 use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher, Version};
 use once_cell::sync::Lazy;
 use reqwest::{Response, Url};
 use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use std::time::Duration;
 use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::{
@@ -12,7 +11,7 @@ use zero2prod::{
         get_configuration, DatabaseSettings, IdempotencySettings, IssueDeliverySettings,
     },
     email_client::EmailClient,
-    get_connection_pool, idempotency_key_expiration,
+    get_connection_pool, idempotency_expiration_worker,
     issue_delivery_worker::{self, ExecutionOutcome},
     telemetry::{get_subscriber, init_subscriber},
     Application,
@@ -106,7 +105,7 @@ impl TestApp {
         let expiration_interval = Duration::from_secs(self.idempotency_settings.expiration_secs)
             .try_into()
             .unwrap();
-        idempotency_key_expiration::try_execute_task(&self.db_pool, &expiration_interval)
+        idempotency_expiration_worker::try_execute_task(&self.db_pool, &expiration_interval)
             .await
             .unwrap();
     }
