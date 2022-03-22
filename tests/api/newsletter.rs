@@ -268,7 +268,7 @@ async fn newsletters_deliver_retries_on_external_error() {
     app.dispatch_all_pending_emails().await;
 
     // Assert
-    let saved = sqlx::query!("SELECT n_retries,execute_after FROM issue_delivery_queue")
+    let saved = sqlx::query!("SELECT n_retries FROM issue_delivery_queue")
         .fetch_one(&app.db_pool)
         .await
         .expect("Failed to fetch n_retries.");
@@ -285,7 +285,7 @@ async fn newsletters_deliver_skip_retries_after_max_retries_setting() {
     Mock::given(path("/email"))
         .and(method("POST"))
         .respond_with(ResponseTemplate::new(500))
-        .expect(1)
+        .expect(2)
         .mount(&app.email_server)
         .await;
 
@@ -298,11 +298,13 @@ async fn newsletters_deliver_skip_retries_after_max_retries_setting() {
     });
     app.post_publish_newsletters(&newsletter_request_body).await;
     app.dispatch_all_pending_emails().await;
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    app.dispatch_all_pending_emails().await;
 
     // Assert
-    let saved = sqlx::query!("SELECT n_retries,execute_after FROM issue_delivery_queue")
-        .fetch_one(&app.db_pool)
+    let saved = sqlx::query!("SELECT n_retries FROM issue_delivery_queue")
+        .fetch_optional(&app.db_pool)
         .await
-        .expect("Failed to fetch n_retries.");
-    assert_eq!(saved.n_retries, 1);
+        .expect("Failed to fetch query.");
+    assert!(saved.is_none());
 }

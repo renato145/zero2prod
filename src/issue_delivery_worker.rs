@@ -180,7 +180,7 @@ async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, any
 }
 
 /// Retry using exponential backoff with full-jitter
-#[tracing::instrument(skip_all, fields(error=%error, n_retries))]
+#[tracing::instrument(skip_all, fields(error=%error, n_retries=n_retries))]
 async fn retry_task(
     error: reqwest::Error,
     transaction: &mut PgTransaction,
@@ -189,6 +189,7 @@ async fn retry_task(
     n_retries: i16,
     settings: &IssueDeliverySettings,
 ) -> Result<(), anyhow::Error> {
+    let n_retries = n_retries + 1;
     if n_retries >= settings.max_retries {
         anyhow::bail!("Max retries reached {}. Skipping.", n_retries);
     }
@@ -208,7 +209,7 @@ async fn retry_task(
 			newsletter_issue_id = $3 AND
 			subscriber_email = $4
 		"#,
-        n_retries + 1,
+        n_retries,
         execute_after,
         issue_id,
         email
