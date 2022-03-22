@@ -28,9 +28,10 @@ async fn worker_loop(
             Ok(ExecutionOutcome::EmptyQueue) => {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
-            Err(_) => {
+            Err(ExecutionError::UnexpectedError(_)) => {
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
+            Err(ExecutionError::ValidationError(_)) => {}
             Ok(ExecutionOutcome::TaskCompleted) => {}
         }
     }
@@ -39,6 +40,20 @@ async fn worker_loop(
 pub enum ExecutionOutcome {
     TaskCompleted,
     EmptyQueue,
+}
+
+#[derive(thiserror::Error)]
+pub enum ExecutionError {
+    #[error("{0}")]
+    ValidationError(String),
+    #[error("Something went wrong.")]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+impl std::fmt::Debug for ExecutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
 }
 
 #[tracing::instrument(
@@ -53,17 +68,17 @@ pub async fn try_execute_task(
     pool: &PgPool,
     email_client: &EmailClient,
     settings: &IssueDeliverySettings,
-) -> Result<ExecutionOutcome, anyhow::Error> {
+) -> Result<ExecutionOutcome, ExecutionError> {
     let task = dequeue_task(pool).await?;
     if task.is_none() {
         return Ok(ExecutionOutcome::EmptyQueue);
     }
     let (mut transaction, issue_id, email, n_retries) = task.unwrap();
-    dbg!(&n_retries);
     Span::current()
         .record("newsletter_issue_id", &display(issue_id))
         .record("subscriber_email", &display(&email));
-    match SubscriberEmail::from_str(&email) {
+    let mut do_delete = true;
+    let result = match SubscriberEmail::from_str(&email) {
         Ok(email) => {
             let issue = get_issue(pool, issue_id).await?;
             if let Err(e) = email_client
@@ -75,7 +90,7 @@ pub async fn try_execute_task(
                 )
                 .await
             {
-                if retry_task(
+                if let Err(e) = retry_task(
                     e,
                     &mut transaction,
                     issue_id,
@@ -84,25 +99,32 @@ pub async fn try_execute_task(
                     settings,
                 )
                 .await
-                .is_ok()
                 {
-                    transaction.commit().await?;
-                    return Ok(ExecutionOutcome::TaskCompleted);
+                    tracing::error!(
+                        error.cause_chain = ?e,
+                        error.message = %e,
+                        "Failed to retry task."
+                    );
+                } else {
+                    do_delete = false;
                 }
             }
+            Ok(ExecutionOutcome::TaskCompleted)
         }
-        Err(e) => {
-            tracing::error!(
-                error.cause_chain = ?e,
-                error.message = %e,
-                "Skipping a confirmed subscriber. \
-                 Their stored contact details are invalid"
-            );
-        }
+        Err(e) => Err(ExecutionError::ValidationError(format!(
+            "Skipping a confirmed subscriber. \
+             Their stored contact details are invalid: {}",
+            e
+        ))),
+    };
+    if do_delete {
+        delete_task(&mut transaction, issue_id, &email).await?;
     }
-    delete_task(&mut transaction, issue_id, &email).await?;
-    transaction.commit().await?;
-    Ok(ExecutionOutcome::TaskCompleted)
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit transaction.")?;
+    result
 }
 
 type PgTransaction = Transaction<'static, Postgres>;
