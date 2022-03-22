@@ -72,6 +72,18 @@
     },
     "query": "\n        SELECT id\n        FROM subscriptions\n        wHERE email = $1 AND name = $2 AND status = 'pending_confirmation'\n        "
   },
+  "41e6e154ba148584b6370983c4c7ede5a9af9701623fb3719978146f13fd5e02": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Interval"
+        ]
+      }
+    },
+    "query": "\n\t\tDELETE FROM idempotency\n\t\twHERE (created_at + $1) < now()\n\t\t"
+  },
   "6f87a1f549ea89d4d8b294ee1b3813eab91da98f06631317f392be193a98876c": {
     "describe": {
       "columns": [
