@@ -17,3 +17,6 @@ issue_delivery:
   backoff_base_secs: 5
   backoff_cap_secs: 2000
   max_retries: 4
+idempotency:
+  expiration_secs: 1800 # 30 minutes
+  expiration_frequency_secs: 3600 # 1 hour

@@ -325,6 +325,7 @@ async fn idempotency_keys_are_removed_after_they_expire() {
     });
     app.post_publish_newsletters(&newsletter_request_body).await;
     app.remove_expired_idempotency_keys().await;
+    tokio::time::sleep(Duration::from_secs_f32(1.1)).await;
 
     // Assert
     let row = sqlx::query!(r#"SELECT COUNT(*) as "n!" FROM idempotency"#)
@@ -332,4 +333,41 @@ async fn idempotency_keys_are_removed_after_they_expire() {
         .await
         .unwrap();
     assert_eq!(row.n, 0);
+}
+
+#[tokio::test]
+async fn non_expired_idempotency_keys_are_not_removed() {
+    // Arrange
+    let mut app = spawn_app().await;
+    app.idempotency_settings.expiration_secs = 2;
+    create_confirmed_subscriber(&app).await;
+    app.do_login().await;
+
+    // Act
+    let newsletter_request_body_1 = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    let idempotency_key = uuid::Uuid::new_v4().to_string();
+    let newsletter_request_body_2 = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": idempotency_key
+    });
+    app.post_publish_newsletters(&newsletter_request_body_1)
+        .await;
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    app.post_publish_newsletters(&newsletter_request_body_2)
+        .await;
+    app.remove_expired_idempotency_keys().await;
+
+    // Assert
+    let row = sqlx::query!(r#"SELECT idempotency_key FROM idempotency"#)
+        .fetch_one(&app.db_pool)
+        .await
+        .unwrap();
+    assert_eq!(row.idempotency_key, idempotency_key);
 }

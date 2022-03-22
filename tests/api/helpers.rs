@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher, Version};
 use once_cell::sync::Lazy;
 use reqwest::{Response, Url};
@@ -6,10 +8,12 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::{
-    configuration::{get_configuration, DatabaseSettings, IssueDeliverySettings},
+    configuration::{
+        get_configuration, DatabaseSettings, IdempotencySettings, IssueDeliverySettings,
+    },
     email_client::EmailClient,
-    get_connection_pool,
-    issue_delivery_worker::{try_execute_task, ExecutionOutcome},
+    get_connection_pool, idempotency_key_expiration,
+    issue_delivery_worker::{self, ExecutionOutcome},
     telemetry::{get_subscriber, init_subscriber},
     Application,
 };
@@ -36,6 +40,7 @@ pub struct TestApp {
     pub api_client: reqwest::Client,
     pub email_client: EmailClient,
     pub issue_delivery_settings: IssueDeliverySettings,
+    pub idempotency_settings: IdempotencySettings,
 }
 
 pub struct ConfirmationLinks {
@@ -84,7 +89,7 @@ impl TestUser {
 impl TestApp {
     pub async fn dispatch_all_pending_emails(&self) {
         loop {
-            if let ExecutionOutcome::EmptyQueue = try_execute_task(
+            if let ExecutionOutcome::EmptyQueue = issue_delivery_worker::try_execute_task(
                 &self.db_pool,
                 &self.email_client,
                 &self.issue_delivery_settings,
@@ -98,19 +103,12 @@ impl TestApp {
     }
 
     pub async fn remove_expired_idempotency_keys(&self) {
-        // loop {
-        //     if let ExecutionOutcome::EmptyQueue = try_execute_task(
-        //         &self.db_pool,
-        //         &self.email_client,
-        //         &self.issue_delivery_settings,
-        //     )
-        //     .await
-        //     .unwrap()
-        //     {
-        //         break;
-        //     }
-        // }
-        todo!()
+        let expiration_interval = Duration::from_secs(self.idempotency_settings.expiration_secs)
+            .try_into()
+            .unwrap();
+        idempotency_key_expiration::try_execute_task(&self.db_pool, &expiration_interval)
+            .await
+            .unwrap();
     }
 
     pub async fn get_subscriptions(&self) -> reqwest::Response {
@@ -264,6 +262,8 @@ pub async fn spawn_app() -> TestApp {
         // Set max delay to 1 sec for retries
         c.issue_delivery.backoff_cap_secs = 1;
         c.issue_delivery.max_retries = 2;
+        // Set idempotency expiration to 1 seconds
+        c.idempotency.expiration_secs = 1;
         c
     };
 
@@ -296,6 +296,7 @@ pub async fn spawn_app() -> TestApp {
         api_client: client,
         email_client,
         issue_delivery_settings: configuration.issue_delivery,
+        idempotency_settings: configuration.idempotency,
     };
     test_app.test_user.store(&test_app.db_pool).await;
     test_app

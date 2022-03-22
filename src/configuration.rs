@@ -19,6 +19,7 @@ pub struct Settings {
     pub email_client: EmailClientSettings,
     pub redis_uri: Secret<String>,
     pub issue_delivery: IssueDeliverySettings,
+    pub idempotency: IdempotencySettings,
 }
 
 #[derive(Clone, Deserialize)]
@@ -78,6 +79,15 @@ pub struct IssueDeliverySettings {
     pub backoff_cap_secs: i64,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub max_retries: i16,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct IdempotencySettings {
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub expiration_secs: u64,
+    /// How often to check for expiration
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub expiration_frequency_secs: u64,
 }
 
 impl DatabaseSettings {
