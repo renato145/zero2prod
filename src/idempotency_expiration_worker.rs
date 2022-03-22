@@ -23,7 +23,7 @@ async fn worker_loop(pool: PgPool, settings: IdempotencySettings) -> Result<(), 
     // When server restarts wait half the expiration time to start working
     tokio::time::sleep(Duration::from_secs_f32(frequency / 2.0)).await;
     loop {
-        if let Err(_) = try_execute_task(&pool, &expiration_interval).await {
+        if try_execute_task(&pool, &expiration_interval).await.is_err() {
             retries += 1;
             if retries < MAX_RETRIES {
                 tokio::time::sleep(Duration::from_secs_f32(add_jitter(10.0))).await;
