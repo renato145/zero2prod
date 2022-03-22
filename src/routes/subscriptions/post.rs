@@ -1,7 +1,8 @@
 use crate::{
     domain::{NewSubscriber, SubscriptionToken},
     email_client::EmailClient,
-    routes::{error_chain_fmt, TEMPLATES},
+    error_chain_fmt,
+    routes::TEMPLATES,
     utils::see_other,
     ApplicationBaseUrl,
 };

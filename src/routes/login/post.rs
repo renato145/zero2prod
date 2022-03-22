@@ -1,6 +1,6 @@
 use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
-    routes::error_chain_fmt,
+    error_chain_fmt,
     session_state::TypedSession,
     utils::see_other,
 };

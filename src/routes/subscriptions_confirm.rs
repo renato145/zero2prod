@@ -1,5 +1,4 @@
-use super::error_chain_fmt;
-use crate::domain::SubscriptionToken;
+use crate::{domain::SubscriptionToken, error_chain_fmt};
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;

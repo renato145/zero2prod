@@ -1,8 +1,8 @@
 use crate::{
     authentication::UserId,
     domain::NewsletterIssue,
+    error_chain_fmt,
     idempotency::{save_response, try_processing, IdempotencyKey, NextAction},
-    routes::error_chain_fmt,
     utils::see_other,
 };
 use actix_web::{error::InternalError, web, HttpResponse};

@@ -2,7 +2,7 @@ use crate::{
     configuration::{IssueDeliverySettings, Settings},
     domain::SubscriberEmail,
     email_client::EmailClient,
-    get_connection_pool,
+    error_chain_fmt, get_connection_pool,
 };
 use anyhow::Context;
 use chrono::Utc;
