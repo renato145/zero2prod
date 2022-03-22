@@ -308,3 +308,28 @@ async fn newsletters_deliver_skip_retries_after_max_retries_setting() {
         .expect("Failed to fetch query.");
     assert!(saved.is_none());
 }
+
+#[tokio::test]
+async fn idempotency_keys_are_removed_after_they_expire() {
+    // Arrange
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.do_login().await;
+
+    // Act
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    app.post_publish_newsletters(&newsletter_request_body).await;
+    app.remove_expired_idempotency_keys().await;
+
+    // Assert
+    let row = sqlx::query!(r#"SELECT COUNT(*) as "n!" FROM idempotency"#)
+        .fetch_one(&app.db_pool)
+        .await
+        .unwrap();
+    assert_eq!(row.n, 0);
+}

@@ -97,6 +97,22 @@ impl TestApp {
         }
     }
 
+    pub async fn remove_expired_idempotency_keys(&self) {
+        // loop {
+        //     if let ExecutionOutcome::EmptyQueue = try_execute_task(
+        //         &self.db_pool,
+        //         &self.email_client,
+        //         &self.issue_delivery_settings,
+        //     )
+        //     .await
+        //     .unwrap()
+        //     {
+        //         break;
+        //     }
+        // }
+        todo!()
+    }
+
     pub async fn get_subscriptions(&self) -> reqwest::Response {
         self.api_client
             .get(format!("{}/subscriptions", &self.address))
