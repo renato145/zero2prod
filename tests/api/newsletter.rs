@@ -324,8 +324,8 @@ async fn idempotency_keys_are_removed_after_they_expire() {
         "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     app.post_publish_newsletters(&newsletter_request_body).await;
+    tokio::time::sleep(Duration::from_secs_f32(2.0)).await;
     app.remove_expired_idempotency_keys().await;
-    tokio::time::sleep(Duration::from_secs_f32(1.1)).await;
 
     // Assert
     let row = sqlx::query!(r#"SELECT COUNT(*) as "n!" FROM idempotency"#)
