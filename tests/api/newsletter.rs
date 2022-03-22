@@ -264,13 +264,13 @@ async fn newsletters_deliver_retries_on_external_error() {
         "html_content": "<p>Newsletter body as HTML</p>",
         "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
-    let response = app.post_publish_newsletters(&newsletter_request_body).await;
-    let body = response.text().await.unwrap();
-    dbg!(&body);
-    
+    app.post_publish_newsletters(&newsletter_request_body).await;
+    app.dispatch_all_pending_emails().await;
+
     // Assert
-    todo!("Check retry");
-//   - Retry when the delivery attempt fails due to a Postmark error. Enhance issue_delivery_queue e.g. adding
-//     a `n_retries` and `execute_after` columns to keep track of how many attempts have already taken place
-//     and how long we should wait before trying again (page 480).
+    let saved = sqlx::query!("SELECT n_retries,execute_after FROM issue_delivery_queue")
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch n_retries.");
+    assert_eq!(saved.n_retries, 1);
 }

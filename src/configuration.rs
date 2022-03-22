@@ -18,6 +18,7 @@ pub struct Settings {
     pub database: DatabaseSettings,
     pub email_client: EmailClientSettings,
     pub redis_uri: Secret<String>,
+    pub issue_delivery: IssueDeliverySettings,
 }
 
 #[derive(Clone, Deserialize)]
@@ -67,6 +68,16 @@ pub struct DatabaseSettings {
     pub host: String,
     pub database_name: String,
     pub require_ssl: bool,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct IssueDeliverySettings {
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub backoff_base_secs: i64,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub backoff_cap_secs: i64,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub max_retries: i16,
 }
 
 impl DatabaseSettings {

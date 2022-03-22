@@ -1,7 +1,12 @@
 use crate::{
-    configuration::Settings, domain::SubscriberEmail, email_client::EmailClient,
+    configuration::{IssueDeliverySettings, Settings},
+    domain::SubscriberEmail,
+    email_client::EmailClient,
     get_connection_pool,
 };
+use anyhow::Context;
+use chrono::Utc;
+use rand::Rng;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::{str::FromStr, time::Duration};
 use tracing::{field::display, Span};
@@ -10,12 +15,16 @@ use uuid::Uuid;
 pub async fn run_worker_until_stopped(configuration: Settings) -> Result<(), anyhow::Error> {
     let connection_pool = get_connection_pool(&configuration.database);
     let email_client = configuration.email_client.client()?;
-    worker_loop(connection_pool, email_client).await
+    worker_loop(connection_pool, email_client, configuration.issue_delivery).await
 }
 
-async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {
+async fn worker_loop(
+    pool: PgPool,
+    email_client: EmailClient,
+    settings: IssueDeliverySettings,
+) -> Result<(), anyhow::Error> {
     loop {
-        match try_execute_task(&pool, &email_client).await {
+        match try_execute_task(&pool, &email_client, &settings).await {
             Ok(ExecutionOutcome::EmptyQueue) => {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
@@ -43,12 +52,14 @@ pub enum ExecutionOutcome {
 pub async fn try_execute_task(
     pool: &PgPool,
     email_client: &EmailClient,
+    settings: &IssueDeliverySettings,
 ) -> Result<ExecutionOutcome, anyhow::Error> {
     let task = dequeue_task(pool).await?;
     if task.is_none() {
         return Ok(ExecutionOutcome::EmptyQueue);
     }
-    let (transaction, issue_id, email) = task.unwrap();
+    let (mut transaction, issue_id, email, n_retries) = task.unwrap();
+    dbg!(&n_retries);
     Span::current()
         .record("newsletter_issue_id", &display(issue_id))
         .record("subscriber_email", &display(&email));
@@ -64,11 +75,20 @@ pub async fn try_execute_task(
                 )
                 .await
             {
-                tracing::error!(
-                    error.cause_chain = ?e,
-                    error.message = %e,
-                    "Failed to deliver issue to a confirmed subscriber. Skipping."
-                );
+                if retry_task(
+                    e,
+                    &mut transaction,
+                    issue_id,
+                    email.as_ref(),
+                    n_retries,
+                    settings,
+                )
+                .await
+                .is_ok()
+                {
+                    transaction.commit().await?;
+                    return Ok(ExecutionOutcome::TaskCompleted);
+                }
             }
         }
         Err(e) => {
@@ -80,7 +100,8 @@ pub async fn try_execute_task(
             );
         }
     }
-    delete_task(transaction, issue_id, &email).await?;
+    delete_task(&mut transaction, issue_id, &email).await?;
+    transaction.commit().await?;
     Ok(ExecutionOutcome::TaskCompleted)
 }
 
@@ -89,12 +110,13 @@ type PgTransaction = Transaction<'static, Postgres>;
 #[tracing::instrument(skip_all)]
 async fn dequeue_task(
     pool: &PgPool,
-) -> Result<Option<(PgTransaction, Uuid, String)>, anyhow::Error> {
+) -> Result<Option<(PgTransaction, Uuid, String, i16)>, anyhow::Error> {
     let mut transaction = pool.begin().await?;
     let r = sqlx::query!(
         r#"
-		SELECT newsletter_issue_id, subscriber_email
+		SELECT newsletter_issue_id, subscriber_email, n_retries
 		FROM issue_delivery_queue
+        WHERE execute_after <= now()
 		FOR UPDATE
 		SKIP LOCKED
 		LIMIT 1
@@ -107,6 +129,7 @@ async fn dequeue_task(
             transaction,
             r.newsletter_issue_id,
             r.subscriber_email,
+            r.n_retries,
         )))
     } else {
         Ok(None)
@@ -115,7 +138,7 @@ async fn dequeue_task(
 
 #[tracing::instrument(skip_all)]
 async fn delete_task(
-    mut transaction: PgTransaction,
+    transaction: &mut PgTransaction,
     issue_id: Uuid,
     email: &str,
 ) -> Result<(), anyhow::Error> {
@@ -129,9 +152,8 @@ async fn delete_task(
         issue_id,
         email
     )
-    .execute(&mut transaction)
+    .execute(transaction)
     .await?;
-    transaction.commit().await?;
     Ok(())
 }
 
@@ -155,4 +177,52 @@ async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, any
     .fetch_one(pool)
     .await?;
     Ok(issue)
+}
+
+/// Retry using exponential backoff with full-jitter
+#[tracing::instrument(skip_all, fields(error=%error, n_retries))]
+async fn retry_task(
+    error: reqwest::Error,
+    transaction: &mut PgTransaction,
+    issue_id: Uuid,
+    email: &str,
+    n_retries: i16,
+    settings: &IssueDeliverySettings,
+) -> Result<(), anyhow::Error> {
+    if n_retries >= settings.max_retries {
+        anyhow::bail!("Max retries reached {}. Skipping.", n_retries);
+    }
+    let backoff = get_expo_backoff_full_jitter(
+        settings.backoff_base_secs * 1000,
+        settings.backoff_cap_secs * 1000,
+        n_retries as u32,
+    );
+    let execute_after = Utc::now() + chrono::Duration::milliseconds(backoff);
+    sqlx::query!(
+        r#"
+        UPDATE issue_delivery_queue
+        SET
+            n_retries = $1,
+            execute_after = $2
+        WHERE
+			newsletter_issue_id = $3 AND
+			subscriber_email = $4
+		"#,
+        n_retries + 1,
+        execute_after,
+        issue_id,
+        email
+    )
+    .execute(transaction)
+    .await
+    .context("Failed to set task for retry. Skipping.")?;
+    tracing::info!("Issue scheduled to retry after {} milliseconds.", backoff);
+    Ok(())
+}
+
+/// Using: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+fn get_expo_backoff_full_jitter(base: i64, cap: i64, n: u32) -> i64 {
+    let mut rng = rand::thread_rng();
+    let expo = cap.min(2i64.pow(n) * base);
+    rng.gen_range(0..=expo)
 }

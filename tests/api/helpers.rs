@@ -6,7 +6,7 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::{
-    configuration::{get_configuration, DatabaseSettings},
+    configuration::{get_configuration, DatabaseSettings, IssueDeliverySettings},
     email_client::EmailClient,
     get_connection_pool,
     issue_delivery_worker::{try_execute_task, ExecutionOutcome},
@@ -35,6 +35,7 @@ pub struct TestApp {
     pub test_user: TestUser,
     pub api_client: reqwest::Client,
     pub email_client: EmailClient,
+    pub issue_delivery_settings: IssueDeliverySettings,
 }
 
 pub struct ConfirmationLinks {
@@ -83,10 +84,13 @@ impl TestUser {
 impl TestApp {
     pub async fn dispatch_all_pending_emails(&self) {
         loop {
-            if let ExecutionOutcome::EmptyQueue =
-                try_execute_task(&self.db_pool, &self.email_client)
-                    .await
-                    .unwrap()
+            if let ExecutionOutcome::EmptyQueue = try_execute_task(
+                &self.db_pool,
+                &self.email_client,
+                &self.issue_delivery_settings,
+            )
+            .await
+            .unwrap()
             {
                 break;
             }
@@ -241,6 +245,9 @@ pub async fn spawn_app() -> TestApp {
         c.database.database_name = Uuid::new_v4().to_string();
         // Use the mock server as email API
         c.email_client.base_url = email_server.uri();
+        // Set max delay to 1 sec for retries
+        c.issue_delivery.backoff_cap_secs = 1;
+        c.issue_delivery.max_retries = 2;
         c
     };
 
@@ -272,6 +279,7 @@ pub async fn spawn_app() -> TestApp {
         test_user: TestUser::generate(),
         api_client: client,
         email_client,
+        issue_delivery_settings: configuration.issue_delivery,
     };
     test_app.test_user.store(&test_app.db_pool).await;
     test_app
