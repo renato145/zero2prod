@@ -274,3 +274,35 @@ async fn newsletters_deliver_retries_on_external_error() {
         .expect("Failed to fetch n_retries.");
     assert_eq!(saved.n_retries, 1);
 }
+
+#[tokio::test]
+async fn newsletters_deliver_skip_retries_after_max_retries_setting() {
+    // Arrange
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.do_login().await;
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(500))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // Act - Submit newsletter
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    app.post_publish_newsletters(&newsletter_request_body).await;
+    app.dispatch_all_pending_emails().await;
+
+    // Assert
+    let saved = sqlx::query!("SELECT n_retries,execute_after FROM issue_delivery_queue")
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch n_retries.");
+    assert_eq!(saved.n_retries, 1);
+}
