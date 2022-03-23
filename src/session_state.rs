@@ -27,6 +27,13 @@ impl TypedSession {
     pub fn log_out(self) {
         self.0.purge()
     }
+
+    pub fn is_logged(&self) -> bool {
+        if let Ok(Some(_)) = self.get_user_id() {
+            return true;
+        }
+        false
+    }
 }
 
 impl FromRequest for TypedSession {
