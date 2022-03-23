@@ -50,7 +50,7 @@ async fn create_subscriber(client: &Client, email_server: &MockServer) -> (Strin
     .unwrap();
 
     client
-        .post(format!("http://localhost:{APP_PORT}/subscriptions"))
+        .post(format!("http://localhost:{APP_PORT}/subscribe"))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
