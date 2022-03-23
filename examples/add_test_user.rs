@@ -41,12 +41,14 @@ impl TestUser {
     }
 }
 
+const ERROR_MSG: &str = "Invalid input, try: `add_test_user NEWUSER PASSWORD`";
+
 #[tokio::main]
 async fn main() {
     let mut args = std::env::args();
     args.next();
-    let username = args.next().expect("No username given");
-    let password = args.next().expect("No password given");
+    let username = args.next().expect(ERROR_MSG);
+    let password = args.next().expect(ERROR_MSG);
     let user = TestUser::new(username, password);
     let configuration = get_configuration().expect("Failed to read configuration.");
     let pool = get_connection_pool(&configuration.database);
