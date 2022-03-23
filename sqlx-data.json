@@ -1,22 +1,40 @@
 {
   "db": "PostgreSQL",
-  "1fbe5b27d417e275cd611a19c4c25a5c47f720a9872a00d4e85b7cb9328e80ca": {
+  "09be4d9534f5fcd695844ac30723317c2402257b0bc6361dea626d479ed29088": {
     "describe": {
       "columns": [
         {
-          "name": "n!",
+          "name": "title",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "Text"
+        },
+        {
+          "name": "subscriber_email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "n_retries",
+          "ordinal": 2,
+          "type_info": "Int2"
+        },
+        {
+          "name": "execute_after",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
-        null
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": []
       }
     },
-    "query": "\n\t\tSELECT count(newsletter_issue_id) as \"n!\"\n\t\tFROM issue_delivery_queue\n\t\t"
+    "query": "\n\t\tSELECT title, subscriber_email, n_retries, execute_after\n\t\tFROM issue_delivery_queue a\n            INNER JOIN newsletter_issues b ON a.newsletter_issue_id = b.newsletter_issue_id\n        ORDER BY execute_after\n\t\t"
   },
   "2880480077b654e38b63f423ab40680697a500ffe1af1d1b39108910594b581b": {
     "describe": {

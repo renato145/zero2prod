@@ -3,15 +3,26 @@
 @tailwind utilities;
 
 @layer base {
-	body {
-		@apply bg-gray-50 antialiased text-gray-900;
-	}
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
 
-	a {
-		@apply underline text-blue-800 hover:text-blue-600;
-	}
+  a {
+    @apply text-blue-800 underline hover:text-blue-600;
+  }
 
-	button {
-		@apply bg-blue-600 hover:bg-blue-400 active:bg-blue-800 px-2 py-1 rounded text-white focus:outline-none focus:ring !important;
-	}
+  button {
+    @apply rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-400 focus:outline-none focus:ring active:bg-blue-800 !important;
+  }
+}
+
+@layer components {
+  .table-fmt th,
+  .table-fmt td {
+    @apply border border-slate-400 px-4;
+  }
+
+  .table-fmt th {
+    @apply bg-slate-200;
+  }
 }
