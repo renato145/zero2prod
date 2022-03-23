@@ -3,6 +3,7 @@ use fake::{
     faker::{internet::en::SafeEmail, name::en::Name},
     Fake,
 };
+use reqwest::Response;
 use std::time::Duration;
 use wiremock::{
     matchers::{any, method, path},
@@ -11,7 +12,8 @@ use wiremock::{
 
 /// Use the public API of the application under test to create
 /// an unconfirmed subscriber
-async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
+/// Returns: name, email and confimation links
+async fn create_unconfirmed_subscriber(app: &TestApp) -> (String, String, ConfirmationLinks) {
     let name: String = Name().fake();
     let email: String = SafeEmail().fake();
     let body = serde_urlencoded::to_string(&serde_json::json!({
@@ -40,16 +42,28 @@ async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
         .unwrap()
         .pop()
         .unwrap();
-    app.get_confirmation_links(&email_request)
+    (name, email, app.get_confirmation_links(&email_request))
 }
 
-async fn create_confirmed_subscriber(app: &TestApp) {
-    let confirmation_link = create_unconfirmed_subscriber(app).await;
+/// Returns: name and email
+pub async fn create_confirmed_subscriber(app: &TestApp) -> (String, String) {
+    let (name, email, confirmation_link) = create_unconfirmed_subscriber(app).await;
     reqwest::get(confirmation_link.html)
         .await
         .unwrap()
         .error_for_status()
         .unwrap();
+    (name, email)
+}
+
+pub async fn publis_newsletter(app: &TestApp) -> Response {
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "text_content": "Newsletter body as plain text",
+        "html_content": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    app.post_publish_newsletters(&newsletter_request_body).await
 }
 
 #[tokio::test]
@@ -66,13 +80,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         .await;
 
     // Act - Submit newsletter form
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    let response = publis_newsletter(&app).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
@@ -103,13 +111,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         .await;
 
     // Act - Submit newsletter form
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    let response = publis_newsletter(&app).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
 
     // Act - Follow the redirect
@@ -143,13 +145,7 @@ async fn you_must_be_logged_in_to_publish_a_newsletter() {
     let app = spawn_app().await;
 
     // Act
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    let response = app.post_publish_newsletters(&newsletter_request_body).await;
+    let response = publis_newsletter(&app).await;
 
     // Assert
     assert_is_redirect_to(&response, "/login");
@@ -258,13 +254,7 @@ async fn newsletters_deliver_retries_on_external_error() {
         .await;
 
     // Act - Submit newsletter
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    app.post_publish_newsletters(&newsletter_request_body).await;
+    publis_newsletter(&app).await;
     app.dispatch_all_pending_emails().await;
 
     // Assert
@@ -290,13 +280,7 @@ async fn newsletters_deliver_skip_retries_after_max_retries_setting() {
         .await;
 
     // Act - Submit newsletter
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    app.post_publish_newsletters(&newsletter_request_body).await;
+    publis_newsletter(&app).await;
     app.dispatch_all_pending_emails().await;
     tokio::time::sleep(Duration::from_secs(1)).await;
     app.dispatch_all_pending_emails().await;
@@ -317,13 +301,7 @@ async fn idempotency_keys_are_removed_after_they_expire() {
     app.do_login().await;
 
     // Act
-    let newsletter_request_body = serde_json::json!({
-        "title": "Newsletter title",
-        "text_content": "Newsletter body as plain text",
-        "html_content": "<p>Newsletter body as HTML</p>",
-        "idempotency_key": uuid::Uuid::new_v4().to_string()
-    });
-    app.post_publish_newsletters(&newsletter_request_body).await;
+    publis_newsletter(&app).await;
     tokio::time::sleep(Duration::from_secs_f32(2.0)).await;
     app.remove_expired_idempotency_keys().await;
 
