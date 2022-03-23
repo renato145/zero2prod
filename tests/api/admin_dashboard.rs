@@ -32,7 +32,11 @@ async fn logout_clears_session_state() {
     // Act - Follow the redirect
     let response = app.get_login().await;
     let html_page = response.text().await.unwrap();
-    assert!(html_page.contains(r#"<p><i>You have successfully logged out.</i></p>"#));
+    assert!(
+        html_page.contains("You have successfully logged out."),
+        "Current value: {}",
+        html_page
+    );
 
     // Act - Attempt to load admin panel
     let response = app.get_admin_dashboard().await;
