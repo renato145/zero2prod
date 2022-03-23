@@ -98,7 +98,7 @@ fn newsletter_redirect(
 }
 
 fn success_message() -> FlashMessage {
-    FlashMessage::info(
+    FlashMessage::success(
         "The newsletter issue has been accepted - \
                  emails will go out shortly.",
     )

@@ -9,14 +9,10 @@ pub async fn login_form(
     if session.is_logged() {
         return see_other("/admin/dashboard");
     }
-    let mut error_msg = String::new();
-    for m in flash_messages.iter() {
-        error_msg.push_str(m.content());
-    }
-    let error_msg = (!error_msg.is_empty()).then(|| error_msg);
+    let flash_msgs = flash_messages.iter().collect::<Vec<_>>();
     let html_body = {
         let mut context = tera::Context::new();
-        context.insert("error_msg", &error_msg);
+        context.insert("flash_msgs", &flash_msgs);
         TEMPLATES.render("login.html", &context).unwrap()
     };
     HttpResponse::Ok()

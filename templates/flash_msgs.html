@@ -1,0 +1,23 @@
+{% for msg in flash_msgs %}
+  {% if msg.level == "Error" %}
+    <div class="break-words bg-red-200 p-2 my-2 text-sm">
+      <p class="font-bold">Error:
+  {% elif msg.level == "Warning" %}
+    <div class="break-words bg-amber-200 p-2 my-2 text-sm">
+      <p class="font-bold">Warning:
+  {% elif msg.level == "Success" %}
+    <div class="break-words bg-green-200 p-2 my-2 text-sm">
+      <p class="font-bold">Success:
+  {% elif msg.level == "Info" %}
+    <div class="break-words bg-blue-200 p-2 my-2 text-sm">
+      <p class="font-bold">Info:
+  {% elif msg.level == "Debug" %}
+    <div class="break-words p-2 my-2 text-sm">
+      <p class="font-bold">Debug:
+  {% else %}
+    <div class="break-words bg-gray-200 p-2 my-2 text-sm">
+      <p class="font-bold">
+  {% endif %}
+    <span class="font-normal italic">{{msg.content}}</span></p>
+  </div>
+{% endfor %}
