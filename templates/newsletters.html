@@ -2,8 +2,9 @@
 title %} {% block content %}
 <div class="container mx-auto max-w-screen-md">
   {% include "flash_msgs.html" %}
+  <p class="text-3xl font-medium">Publish newsletter</p>
   <form
-    class="grid grid-cols-1 gap-6"
+    class="mt-8 grid grid-cols-1 gap-6"
     action="/admin/newsletters"
     method="post"
   >

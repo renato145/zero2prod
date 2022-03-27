@@ -2,7 +2,8 @@
 title %} {% block content %}
 <div class="container mx-auto max-w-screen-sm">
   {% include "flash_msgs.html" %}
-  <form class="grid grid-cols-1 gap-6" action="/subscribe" method="post">
+  <p class="text-3xl font-medium">Subscribe</p>
+  <form class="mt-8 grid grid-cols-1 gap-6" action="/subscribe" method="post">
     <label>
       <span class="text-gray-700">Name</span>
       <input
