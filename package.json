@@ -1,11 +1,13 @@
 {
   "devDependencies": {
+    "browser-sync": "^2.27.9",
     "prettier-plugin-tailwindcss": "^0.1.8",
     "tailwindcss": "^3.0.23"
   },
   "scripts": {
     "start": "tailwindcss -i ./templates/style.css -o ./static/style.css --watch",
-    "build": "NODE_ENV=production tailwindcss -i ./templates/style.css -o ./static/style.css --minify"
+    "build": "NODE_ENV=production tailwindcss -i ./templates/style.css -o ./static/style.css --minify",
+    "browser-sync": "browser-sync start -c bs-config.js"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.0"
