@@ -1,8 +1,8 @@
 {% extends "base.html" %} {% block title %}Delivery process{% endblock title %}
 {% block content %}
 <div class="container mx-auto max-w-screen-lg">
-  <p class="text-2xl font-medium">Delivery process</p>
-  <p class="mt-4 text-lg font-medium">
+  <p class="text-3xl font-medium">Delivery process</p>
+  <p class="mt-8 text-lg font-medium">
     Pending deliveries: <span class="text-gray-700">{{queue_len}}</span>
   </p>
   {% if queue_len > 0 %}
